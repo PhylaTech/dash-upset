@@ -27,7 +27,11 @@ stays off the table (AGPLv3).
 - `dash_upset/data.py` -- the canonical `UpSetData` model plus
   `from_memberships` / `from_contents` / `from_indicators` (upsetplot-style
   conventions, reimplemented, no upsetplot dependency) and a `from_counts`
-  convenience for pre-aggregated data.
+  convenience for pre-aggregated data. `from_indicators` is
+  dataframe-agnostic via **narwhals** (`narwhals.stable.v2`): pandas, Polars,
+  PyArrow, cuDF, and Modin all work, and the package depends on narwhals
+  rather than pandas (pandas + polars are dev-only test deps). Python floor
+  is 3.10 (narwhals 2 requires it; 3.9 is EOL).
 - `dash_upset/figure.py` -- `create_upset(...) -> go.Figure`: intersection-size
   bars, set-size bars, dot matrix with connectors, sorting
   (`sort_by`/`sort_sets_by`), `show_empty`/`show_counts`, hover tooltips with

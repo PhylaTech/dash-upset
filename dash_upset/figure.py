@@ -101,7 +101,7 @@ def create_upset(
 
     set_order = sort_sets(data.set_names, data.set_sizes, sort_sets_by)
     intersections = sort_intersections(shown, set_order, sort_by)
-    size_of_set = dict(zip(data.set_names, data.set_sizes))
+    size_of_set = dict(zip(data.set_names, data.set_sizes, strict=True))
     row_of_set = {name: row for row, name in enumerate(set_order)}
     n_sets = len(set_order)
     n_intersections = len(intersections)
@@ -140,7 +140,7 @@ def create_upset(
             marker={"color": color, "cornerradius": 4, "line": {"width": 0}},
             customdata=[
                 [label, entry.degree, _percent(entry.size, total)]
-                for label, entry in zip(labels, intersections)
+                for label, entry in zip(labels, intersections, strict=True)
             ],
             hovertemplate=(
                 "<b>%{customdata[0]}</b><br>"
@@ -217,7 +217,7 @@ def create_upset(
     dot_x: list[int] = []
     dot_y: list[int] = []
     dot_customdata: list[list[str]] = []
-    for column, (label, entry) in enumerate(zip(labels, intersections)):
+    for column, (label, entry) in enumerate(zip(labels, intersections, strict=True)):
         for name in entry.sets:
             dot_x.append(column)
             dot_y.append(row_of_set[name])

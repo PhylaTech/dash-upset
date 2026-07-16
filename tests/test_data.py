@@ -1,6 +1,7 @@
 """Tests for the UpSetData model and its constructors."""
 
 import pandas as pd
+import polars as pl
 import pytest
 
 from dash_upset import (
@@ -87,27 +88,56 @@ class TestFromContents:
             from_contents({"A": "xyz"})
 
 
+# The indicator equivalent of SAMPLE_MEMBERSHIPS (rows align with SAMPLE_IDS).
+SAMPLE_INDICATORS = {
+    "A": [True, True, True, False, False, True],
+    "B": [False, True, True, True, False, True],
+    "C": [False, False, False, False, False, True],
+}
+
+
 class TestFromIndicators:
-    def test_dataframe(self, sample):
-        frame = pd.DataFrame(
-            {
-                "A": [True, True, True, False, False, True],
-                "B": [False, True, True, True, False, True],
-                "C": [False, False, False, False, False, True],
-            },
-            index=SAMPLE_IDS,
-        )
-        data = from_indicators(frame)
-        assert data == sample
+    def test_pandas_dataframe_index_provides_ids(self, sample):
+        frame = pd.DataFrame(SAMPLE_INDICATORS, index=SAMPLE_IDS)
+        assert from_indicators(frame) == sample
+
+    def test_polars_dataframe_ids_are_positional(self):
+        frame = pl.DataFrame(SAMPLE_INDICATORS)
+        assert from_indicators(frame) == from_memberships(SAMPLE_MEMBERSHIPS)
+
+    def test_element_ids_parameter(self, sample):
+        frame = pl.DataFrame(SAMPLE_INDICATORS)
+        assert from_indicators(frame, element_ids=SAMPLE_IDS) == sample
+
+    def test_element_ids_override_pandas_index(self):
+        frame = pd.DataFrame({"A": [True, False]}, index=["x", "y"])
+        data = from_indicators(frame, element_ids=["u", "v"])
+        assert by_combo(data)[frozenset({"A"})].elements == ("u",)
+
+    def test_element_ids_length_mismatch(self):
+        with pytest.raises(ValueError, match="element_ids"):
+            from_indicators({"A": [True, False]}, element_ids=["x"])
 
     def test_mapping_input(self):
         data = from_indicators({"A": [True, False], "B": [True, True]})
         assert data.set_names == ("A", "B")
         assert data.set_sizes == (1, 2)
 
+    def test_mapping_ragged_columns_rejected(self):
+        with pytest.raises(ValueError, match="equal lengths"):
+            from_indicators({"A": [True], "B": [True, False]})
+
+    def test_mapping_non_boolean_value_rejected(self):
+        with pytest.raises(ValueError, match="boolean"):
+            from_indicators({"A": [True, 2]})
+
     def test_zero_one_integers_accepted(self):
-        data = from_indicators(pd.DataFrame({"A": [1, 0, 1]}))
-        assert data.set_sizes == (2,)
+        assert from_indicators(pd.DataFrame({"A": [1, 0, 1]})).set_sizes == (2,)
+        assert from_indicators(pl.DataFrame({"A": [1, 0, 1]})).set_sizes == (2,)
+
+    def test_out_of_range_integers_rejected(self):
+        with pytest.raises(ValueError, match="other than 0 and 1"):
+            from_indicators(pl.DataFrame({"A": [0, 2]}))
 
     def test_non_boolean_column_rejected(self):
         with pytest.raises(ValueError, match="boolean"):
@@ -117,13 +147,19 @@ class TestFromIndicators:
         frame = pd.DataFrame({"A": pd.array([True, pd.NA], dtype="boolean")})
         with pytest.raises(ValueError, match="missing"):
             from_indicators(frame)
+        with pytest.raises(ValueError, match="missing"):
+            from_indicators(pl.DataFrame({"A": [True, None]}))
 
     def test_non_string_column_rejected(self):
         with pytest.raises(ValueError, match="set names"):
             from_indicators(pd.DataFrame({0: [True]}))
 
+    def test_lazyframe_rejected(self):
+        with pytest.raises(TypeError, match="eager"):
+            from_indicators(pl.LazyFrame({"A": [True]}))
+
     def test_wrong_type_rejected(self):
-        with pytest.raises(TypeError, match="DataFrame"):
+        with pytest.raises(TypeError, match="narwhals-supported"):
             from_indicators([[True, False]])
 
 

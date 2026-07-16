@@ -76,6 +76,11 @@ from_contents({"A": ["x", "y"], "B": ["y", "z"]})   # per-set element ids
 from_indicators(boolean_dataframe)                  # rows = elements, columns = sets
 ```
 
+`from_indicators` is dataframe-agnostic via
+[narwhals](https://github.com/narwhals-dev/narwhals): pandas, Polars, PyArrow,
+cuDF, and Modin frames (or a plain dict of boolean columns) all work, and
+`dash-upset` itself depends on none of those libraries.
+
 Sorting and display are controlled per figure, e.g.
 `create_upset(data, sort_by="degree", sort_sets_by="name", show_counts=False)`.
 

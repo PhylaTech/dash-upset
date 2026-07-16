@@ -22,7 +22,8 @@ import math
 from collections.abc import Hashable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
-import pandas as pd
+import narwhals.stable.v2 as nw
+from narwhals.stable.v2.typing import IntoDataFrame
 
 __all__ = [
     "UpSetData",
@@ -193,7 +194,7 @@ def from_memberships(
     for names in parsed:
         for name in names:
             set_order.setdefault(name)
-    return _build(list(set_order), zip(ids, parsed))
+    return _build(list(set_order), zip(ids, parsed, strict=True))
 
 
 def from_contents(contents: Mapping[str, Iterable[Hashable]]) -> UpSetData:
@@ -226,50 +227,120 @@ def from_contents(contents: Mapping[str, Iterable[Hashable]]) -> UpSetData:
     return _build(set_order, membership.items())
 
 
+def _mapping_indicator_columns(
+    mapping: Mapping[str, Sequence[bool]],
+) -> tuple[dict[str, list[bool]], int]:
+    """Validate a plain mapping of indicator columns without any dataframe library."""
+    columns: dict[str, list[bool]] = {}
+    n_rows: int | None = None
+    for name, values in mapping.items():
+        if not isinstance(name, str) or not name:
+            raise ValueError(
+                "indicator column names are used as set names and must be "
+                f"non-empty strings, got {name!r}"
+            )
+        if isinstance(values, (str, bytes)):
+            raise TypeError(
+                f"indicators[{name!r}] must be a collection of booleans, got the string {values!r}"
+            )
+        parsed = []
+        for value in values:
+            if value not in (True, False, 0, 1):
+                raise ValueError(
+                    f"indicator column {name!r} must be boolean (or 0/1 integers), got {value!r}"
+                )
+            parsed.append(bool(value))
+        if n_rows is None:
+            n_rows = len(parsed)
+        elif len(parsed) != n_rows:
+            raise ValueError(
+                f"indicator columns must have equal lengths: {name!r} has "
+                f"{len(parsed)} values, expected {n_rows}"
+            )
+        columns[name] = parsed
+    return columns, n_rows or 0
+
+
+def _frame_indicator_columns(indicators: IntoDataFrame) -> tuple[dict[str, list[bool]], int, list]:
+    """Extract validated indicator columns from any narwhals-supported dataframe."""
+    try:
+        frame = nw.from_native(indicators, eager_only=True)
+    except TypeError as error:
+        raise TypeError(
+            "indicators must be an eager dataframe from a narwhals-supported "
+            "library (pandas, Polars, PyArrow, cuDF, Modin, ...) or a mapping "
+            f"of column name to boolean values: {error}"
+        ) from None
+    columns: dict[str, list[bool]] = {}
+    for name in frame.columns:
+        if not isinstance(name, str) or not name:
+            raise ValueError(
+                "indicator column names are used as set names and must be "
+                f"non-empty strings, got {name!r}"
+            )
+        series = frame.get_column(name)
+        if series.is_null().any():
+            raise ValueError(f"indicator column {name!r} contains missing values")
+        dtype = frame.schema[name]
+        if dtype == nw.Boolean:
+            pass
+        elif dtype.is_integer():
+            if not series.is_in((0, 1)).all():
+                raise ValueError(
+                    f"integer indicator column {name!r} contains values other than 0 and 1"
+                )
+        else:
+            raise ValueError(
+                f"indicator column {name!r} must be boolean (or 0/1 integers), got dtype {dtype}"
+            )
+        columns[name] = series.cast(nw.Boolean).to_list()
+    # Polars, PyArrow, and friends have no index concept; pandas-likes do, and
+    # there the index is the natural element id (the upsetplot convention).
+    native_index = getattr(frame.to_native(), "index", None)
+    if native_index is None:
+        index_ids = None
+    elif hasattr(native_index, "tolist"):
+        index_ids = native_index.tolist()
+    else:
+        index_ids = list(native_index)
+    return columns, frame.shape[0], index_ids
+
+
 def from_indicators(
-    indicators: pd.DataFrame | Mapping[str, Sequence[bool]],
+    indicators: IntoDataFrame | Mapping[str, Sequence[bool]],
+    element_ids: Sequence[Hashable] | None = None,
 ) -> UpSetData:
     """Build the model from a boolean indicator table (rows = elements).
 
     Args:
-        indicators: A DataFrame (or mapping of columns) whose columns are set
-            names and whose values are booleans (or 0/1 integers) marking
-            membership. The index provides the element ids.
+        indicators: An eager dataframe from any narwhals-supported library
+            (pandas, Polars, PyArrow, cuDF, Modin, ...), or a plain mapping of
+            column name to boolean values. Column names are the set names;
+            values are booleans (or 0/1 integers) marking membership.
+        element_ids: Optional ids for the elements (rows), same length as the
+            table. When omitted, a pandas-style index provides the ids if the
+            input carries one; otherwise ids are positional indices.
 
     Example:
-        >>> from_indicators(pd.DataFrame({"A": [True, False]}))  # doctest: +SKIP
+        >>> from_indicators({"A": [True, False], "B": [True, True]})  # doctest: +SKIP
     """
-    if isinstance(indicators, pd.DataFrame):
-        frame = indicators
-    elif isinstance(indicators, Mapping):
-        frame = pd.DataFrame(dict(indicators))
+    index_ids = None
+    if isinstance(indicators, Mapping):
+        columns, n_rows = _mapping_indicator_columns(indicators)
     else:
-        raise TypeError(
-            "indicators must be a pandas DataFrame or a mapping of column "
-            f"name to boolean values, got {type(indicators).__name__}"
-        )
-    set_order: list[str] = []
-    for column in frame.columns:
-        if not isinstance(column, str) or not column:
-            raise ValueError(
-                f"indicator column names are used as set names and must be "
-                f"non-empty strings, got {column!r}"
-            )
-        series = frame[column]
-        if series.isna().any():
-            raise ValueError(f"indicator column {column!r} contains missing values")
-        is_boolean = pd.api.types.is_bool_dtype(series)
-        is_zero_one = pd.api.types.is_integer_dtype(series) and series.isin((0, 1)).all()
-        if not (is_boolean or is_zero_one):
-            raise ValueError(
-                f"indicator column {column!r} must be boolean (or 0/1 integers), "
-                f"got dtype {series.dtype}"
-            )
-        set_order.append(column)
-    matrix = frame.astype(bool).to_numpy()
+        columns, n_rows, index_ids = _frame_indicator_columns(indicators)
+    if element_ids is not None:
+        ids: Sequence[Hashable] = list(element_ids)
+        if len(ids) != n_rows:
+            raise ValueError(f"got {n_rows} indicator rows but {len(ids)} element_ids")
+    elif index_ids is not None:
+        ids = index_ids
+    else:
+        ids = range(n_rows)
+    set_order = list(columns)
     per_element = (
-        (element, [name for name, member in zip(set_order, row) if member])
-        for element, row in zip(frame.index.tolist(), matrix)
+        (element, [name for name in set_order if columns[name][row]])
+        for row, element in enumerate(ids)
     )
     return _build(set_order, per_element)
 
@@ -404,7 +475,7 @@ def sort_sets(
     the input order.
     """
     key, reverse = _direction(sort_by, ("cardinality", "name", "input"), "sort_sets_by")
-    pairs = list(zip(set_names, set_sizes))
+    pairs = list(zip(set_names, set_sizes, strict=True))
     if key == "cardinality":
         pairs.sort(key=lambda pair: -pair[1])
     elif key == "name":

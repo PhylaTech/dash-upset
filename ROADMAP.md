@@ -149,8 +149,11 @@ Accepted inputs:
   optional per-point values to aggregate). Best when you have raw records.
 - **`from_contents`** -- `{set_name: iterable_of_element_ids}`. Best when you
   have membership lists per set.
-- **`from_indicators`** -- a boolean DataFrame (rows = elements, columns =
-  sets, `True` = member). Best when data already lives in a table.
+- **`from_indicators`** -- a boolean indicator table (rows = elements, columns
+  = sets, `True` = member) from any narwhals-supported dataframe library
+  (pandas, Polars, PyArrow, cuDF, Modin, ...) or a plain mapping of columns.
+  Best when data already lives in a table. Dataframe access goes through
+  **narwhals**, so `dash-upset` depends on no dataframe library itself.
 - A convenience **counts mapping** for pre-aggregated data:
   `{"Action&Drama": 120, ...}` (the shape shown in the README quick start).
 
