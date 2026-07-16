@@ -12,7 +12,13 @@ from dash_upset import (
     from_indicators,
     from_memberships,
 )
-from dash_upset.data import deviations, sort_intersections, sort_sets, subset_sizes
+from dash_upset.data import (
+    deviations,
+    filter_subsets,
+    sort_intersections,
+    sort_sets,
+    subset_sizes,
+)
 from tests.conftest import SAMPLE_IDS, SAMPLE_MEMBERSHIPS
 
 
@@ -314,6 +320,44 @@ class TestSubsetModes:
     def test_invalid_mode(self, sample):
         with pytest.raises(ValueError, match="mode must be one of"):
             subset_sizes(sample, "exclusive")
+
+
+class TestFilterSubsets:
+    # sample sizes: (A,)=1 (A,B)=2 (B,)=1 ()=1 (A,B,C)=1; degrees 1,2,1,0,3.
+    def test_min_size(self, sample):
+        out = filter_subsets(sample.intersections, min_size=2)
+        assert [entry.sets for entry in out] == [("A", "B")]
+
+    def test_max_size(self, sample):
+        out = filter_subsets(sample.intersections, max_size=1)
+        assert all(entry.size <= 1 for entry in out)
+        assert ("A", "B") not in {entry.sets for entry in out}
+
+    def test_max_degree(self, sample):
+        out = filter_subsets(sample.intersections, max_degree=1)
+        assert {entry.sets for entry in out} == {("A",), ("B",), ()}
+
+    def test_min_degree_excludes_empty(self, sample):
+        out = filter_subsets(sample.intersections, min_degree=1)
+        assert all(entry.degree >= 1 for entry in out)
+        assert len(out) == 4
+
+    def test_top_n_keeps_largest(self, sample):
+        out = filter_subsets(sample.intersections, max_subsets=1)
+        assert [entry.sets for entry in out] == [("A", "B")]
+
+    def test_top_n_includes_ties(self, sample):
+        # top 2, but four subsets tie at size 1, so all of them survive the cutoff
+        out = filter_subsets(sample.intersections, max_subsets=2)
+        assert len(out) == 5
+
+    def test_preserves_input_order(self, sample):
+        out = filter_subsets(sample.intersections, min_degree=1)
+        assert out == tuple(e for e in sample.intersections if e.degree >= 1)
+
+    def test_invalid_max_subsets(self, sample):
+        with pytest.raises(ValueError, match="max_subsets"):
+            filter_subsets(sample.intersections, max_subsets=0)
 
 
 class TestDeviation:

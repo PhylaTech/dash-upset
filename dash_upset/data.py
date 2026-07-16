@@ -31,6 +31,7 @@ __all__ = [
     "UpSetIntersection",
     "deviation",
     "deviations",
+    "filter_subsets",
     "from_contents",
     "from_counts",
     "from_indicators",
@@ -478,6 +479,39 @@ def subset_sizes(data: UpSetData, mode: str = "distinct") -> tuple[UpSetIntersec
                 elements=tuple(elements) if have_elements else None,
             )
         )
+    return tuple(result)
+
+
+def filter_subsets(
+    subsets: Sequence[UpSetIntersection],
+    *,
+    min_size: float | None = None,
+    max_size: float | None = None,
+    min_degree: int | None = None,
+    max_degree: int | None = None,
+    max_subsets: int | None = None,
+) -> tuple[UpSetIntersection, ...]:
+    """Filter subsets by size, degree, and top-N count.
+
+    Size and degree bounds are inclusive. ``max_subsets`` keeps the N largest by
+    size; ties at the cutoff are all kept (so more than N may be returned), as
+    in ``upsetplot``. The input order is preserved among survivors, so a
+    subsequent sort determines display order.
+    """
+    if max_subsets is not None and max_subsets < 1:
+        raise ValueError(f"max_subsets must be >= 1, got {max_subsets!r}")
+    result = list(subsets)
+    if min_size is not None:
+        result = [entry for entry in result if entry.size >= min_size]
+    if max_size is not None:
+        result = [entry for entry in result if entry.size <= max_size]
+    if min_degree is not None:
+        result = [entry for entry in result if entry.degree >= min_degree]
+    if max_degree is not None:
+        result = [entry for entry in result if entry.degree <= max_degree]
+    if max_subsets is not None and len(result) > max_subsets:
+        cutoff = sorted((entry.size for entry in result), reverse=True)[max_subsets - 1]
+        result = [entry for entry in result if entry.size >= cutoff]
     return tuple(result)
 
 

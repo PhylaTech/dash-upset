@@ -122,6 +122,26 @@ def test_rejects_all_empty_without_show_empty():
     assert len(trace(fig, "upset:intersection-bars").y) == 1
 
 
+def test_filter_min_size(sample):
+    bars = trace(create_upset(sample, min_subset_size=2), "upset:intersection-bars")
+    assert [row[0] for row in bars.customdata] == ["A & B"]
+
+
+def test_filter_max_degree(sample):
+    bars = trace(create_upset(sample, max_degree=1), "upset:intersection-bars")
+    assert all(row[1] <= 1 for row in bars.customdata)
+
+
+def test_filter_top_n(sample):
+    bars = trace(create_upset(sample, max_subsets=1), "upset:intersection-bars")
+    assert len(bars.y) == 1
+
+
+def test_over_filtering_errors(sample):
+    with pytest.raises(ValueError, match="filter"):
+        create_upset(sample, min_subset_size=1000)
+
+
 def test_sort_by_deviation(sample):
     bars = trace(create_upset(sample, sort_by="deviation"), "upset:intersection-bars")
     labels = [row[0] for row in bars.customdata]

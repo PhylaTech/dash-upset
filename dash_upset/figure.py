@@ -22,6 +22,7 @@ from .data import (
     UpSetData,
     UpSetIntersection,
     deviations,
+    filter_subsets,
     sort_intersections,
     sort_sets,
     subset_sizes,
@@ -57,6 +58,11 @@ def create_upset(
     mode: str = "distinct",
     sort_by: str = "cardinality",
     sort_sets_by: str = "cardinality",
+    min_subset_size: float | None = None,
+    max_subset_size: float | None = None,
+    min_degree: int | None = None,
+    max_degree: int | None = None,
+    max_subsets: int | None = None,
     show_empty: bool = False,
     show_counts: bool = True,
     color: str = _INK,
@@ -80,6 +86,13 @@ def create_upset(
             ``"degree"``, or ``"input"``; prefix with ``-`` to reverse.
         sort_sets_by: Set order: ``"cardinality"``, ``"name"``, or
             ``"input"``; prefix with ``-`` to reverse.
+        min_subset_size: Drop subsets smaller than this (inclusive bound on the
+            mode-dependent size).
+        max_subset_size: Drop subsets larger than this.
+        min_degree: Drop subsets with fewer than this many participating sets.
+        max_degree: Drop subsets with more than this many participating sets.
+        max_subsets: Keep only the N largest subsets by size (ties at the
+            cutoff are all kept).
         show_empty: Include the degree-0 intersection (elements in no set).
         show_counts: Label each intersection bar with its size.
         color: Color of the data marks (bars, active dots, connectors).
@@ -111,6 +124,18 @@ def create_upset(
             "all intersections have degree 0 (elements in no set); pass "
             "show_empty=True to display them"
         )
+    shown = list(
+        filter_subsets(
+            shown,
+            min_size=min_subset_size,
+            max_size=max_subset_size,
+            min_degree=min_degree,
+            max_degree=max_degree,
+            max_subsets=max_subsets,
+        )
+    )
+    if not shown:
+        raise ValueError("no subsets remain after filtering; loosen the filter parameters")
 
     set_order = sort_sets(data.set_names, data.set_sizes, sort_sets_by)
     deviation_map = deviations(data)
