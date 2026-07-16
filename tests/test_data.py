@@ -12,7 +12,7 @@ from dash_upset import (
     from_indicators,
     from_memberships,
 )
-from dash_upset.data import sort_intersections, sort_sets
+from dash_upset.data import sort_intersections, sort_sets, subset_sizes
 from tests.conftest import SAMPLE_IDS, SAMPLE_MEMBERSHIPS
 
 
@@ -269,6 +269,51 @@ class TestSorting:
         assert sort_sets(names, sizes, "input") == ("b", "a", "c")
         with pytest.raises(ValueError, match="sort_sets_by"):
             sort_sets(names, sizes, "size")
+
+
+class TestSubsetModes:
+    def sizes(self, data, mode):
+        return {frozenset(entry.sets): entry.size for entry in subset_sizes(data, mode)}
+
+    def test_distinct_is_identity(self, sample):
+        assert subset_sizes(sample, "distinct") == sample.intersections
+
+    def test_intersect_sizes(self, sample):
+        sizes = self.sizes(sample, "intersect")
+        assert sizes[frozenset({"A"})] == 4  # every element of A
+        assert sizes[frozenset({"A", "B"})] == 3  # in both A and B (incl. A&B&C)
+        assert sizes[frozenset({"B"})] == 4
+        assert sizes[frozenset({"A", "B", "C"})] == 1
+        assert sizes[frozenset()] == 1  # the "no set" subset passes through
+
+    def test_union_sizes(self, sample):
+        sizes = self.sizes(sample, "union")
+        assert sizes[frozenset({"A", "B"})] == 5  # in A or B
+        assert sizes[frozenset({"A", "B", "C"})] == 5
+        assert sizes[frozenset({"A"})] == 4
+
+    def test_singletons_equal_set_size(self, sample):
+        for mode in ("intersect", "union"):
+            sizes = self.sizes(sample, mode)
+            assert sizes[frozenset({"A"})] == sample.set_size("A")
+            assert sizes[frozenset({"B"})] == sample.set_size("B")
+
+    def test_intersect_le_union(self, sample):
+        inter = self.sizes(sample, "intersect")
+        union = self.sizes(sample, "union")
+        assert all(inter[combo] <= union[combo] for combo in inter)
+
+    def test_elements_recomputed(self, sample):
+        by = {frozenset(e.sets): e for e in subset_sizes(sample, "intersect")}
+        assert set(by[frozenset({"A", "B"})].elements) == {"b", "c", "f"}
+
+    def test_counts_input_has_no_elements(self):
+        data = from_counts({"A": 1, "A&B": 2, "B": 1, "A&B&C": 1})
+        assert all(entry.elements is None for entry in subset_sizes(data, "union"))
+
+    def test_invalid_mode(self, sample):
+        with pytest.raises(ValueError, match="mode must be one of"):
+            subset_sizes(sample, "exclusive")
 
 
 def test_constructors_agree(sample):

@@ -18,7 +18,7 @@ from __future__ import annotations
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from .data import UpSetData, UpSetIntersection, sort_intersections, sort_sets
+from .data import UpSetData, UpSetIntersection, sort_intersections, sort_sets, subset_sizes
 
 __all__ = ["create_upset"]
 
@@ -47,6 +47,7 @@ def _percent(part: float, total: float) -> str:
 def create_upset(
     data: UpSetData,
     *,
+    mode: str = "distinct",
     sort_by: str = "cardinality",
     sort_sets_by: str = "cardinality",
     show_empty: bool = False,
@@ -63,6 +64,11 @@ def create_upset(
     Args:
         data: The canonical model, built with one of the ``from_*``
             constructors in :mod:`dash_upset.data`.
+        mode: How subset sizes are counted: ``"distinct"`` (default, exclusive
+            intersections that partition the data), ``"intersect"`` (inclusive:
+            elements in all member sets), or ``"union"`` (elements in at least
+            one member set). See :func:`dash_upset.data.subset_sizes`. In the
+            two overlapping modes the bars no longer sum to the total.
         sort_by: Intersection order: ``"cardinality"`` (largest first),
             ``"degree"``, or ``"input"``; prefix with ``-`` to reverse.
         sort_sets_by: Set order: ``"cardinality"``, ``"name"``, or
@@ -92,7 +98,7 @@ def create_upset(
     if not data.intersections:
         raise ValueError("the data model has no intersections to plot")
 
-    shown = [entry for entry in data.intersections if show_empty or entry.degree > 0]
+    shown = [entry for entry in subset_sizes(data, mode) if show_empty or entry.degree > 0]
     if not shown:
         raise ValueError(
             "all intersections have degree 0 (elements in no set); pass "
@@ -262,6 +268,11 @@ def create_upset(
     row_range = [n_sets - 0.5, -0.5]
     tick_font = {"size": 11, "color": _MUTED_INK}
     title_font = {"size": 12, "color": _SECONDARY_INK}
+    intersection_title = {
+        "distinct": "Intersection size",
+        "intersect": "Intersection size (intersect)",
+        "union": "Union size",
+    }[mode]
 
     fig.update_xaxes(
         row=1,
@@ -276,7 +287,7 @@ def create_upset(
         row=1,
         col=2,
         range=intersection_range,
-        title_text="Intersection size",
+        title_text=intersection_title,
         title_font=title_font,
         tickfont=tick_font,
         gridcolor=_GRID,

@@ -26,6 +26,7 @@ import narwhals.stable.v2 as nw
 from narwhals.stable.v2.typing import IntoDataFrame
 
 __all__ = [
+    "MODES",
     "UpSetData",
     "UpSetIntersection",
     "from_contents",
@@ -34,6 +35,7 @@ __all__ = [
     "from_memberships",
     "sort_intersections",
     "sort_sets",
+    "subset_sizes",
 ]
 
 
@@ -414,6 +416,67 @@ def from_counts(
         set_sizes=set_sizes,
         intersections=intersections,
     )
+
+
+MODES = ("distinct", "intersect", "union")
+
+
+def subset_sizes(data: UpSetData, mode: str = "distinct") -> tuple[UpSetIntersection, ...]:
+    """Return the displayed subsets with sizes computed under ``mode``.
+
+    The displayed combinations are the exclusive intersections the model was
+    built from, so the dot matrix is identical across modes; only the sizes
+    (and, when available, the member ``elements``) change:
+
+    - ``"distinct"`` (default): the exclusive intersection sizes, unchanged.
+      Elements are in *exactly* the member sets and no others, so the subsets
+      partition the data and their sizes sum to the total.
+    - ``"intersect"``: the inclusive intersection, i.e. elements in *all* of
+      the member sets regardless of other memberships. Equals the summed size
+      of every exclusive intersection whose sets are a superset of this one's.
+    - ``"union"``: elements in *at least one* member set. Equals the summed
+      size of every exclusive intersection whose sets overlap this one's.
+
+    In ``"intersect"`` and ``"union"`` the subsets overlap, so an element is
+    counted in more than one subset and the sizes no longer sum to the total.
+    The degree-0 ("in no set") subset has no mode variants and is passed
+    through unchanged.
+    """
+    if mode not in MODES:
+        options = ", ".join(repr(option) for option in MODES)
+        raise ValueError(f"mode must be one of {options}, got {mode!r}")
+    if mode == "distinct":
+        return data.intersections
+    exclusive = data.intersections
+    result: list[UpSetIntersection] = []
+    for entry in exclusive:
+        target = frozenset(entry.sets)
+        if not target:  # the degree-0 "in no set" subset has no mode variants
+            result.append(entry)
+            continue
+        size: float = 0
+        elements: list[Hashable] = []
+        have_elements = True
+        for other in exclusive:
+            member = frozenset(other.sets)
+            if not member:
+                continue
+            contributes = target <= member if mode == "intersect" else bool(target & member)
+            if not contributes:
+                continue
+            size += other.size
+            if other.elements is None:
+                have_elements = False
+            elif have_elements:
+                elements.extend(other.elements)
+        result.append(
+            UpSetIntersection(
+                sets=entry.sets,
+                size=size,
+                elements=tuple(elements) if have_elements else None,
+            )
+        )
+    return tuple(result)
 
 
 def _direction(sort_by: str, valid: tuple[str, ...], what: str) -> tuple[str, bool]:

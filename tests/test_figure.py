@@ -122,6 +122,25 @@ def test_rejects_all_empty_without_show_empty():
     assert len(trace(fig, "upset:intersection-bars").y) == 1
 
 
+def test_mode_changes_bar_heights(sample):
+    distinct = trace(create_upset(sample), "upset:intersection-bars")
+    intersect = trace(create_upset(sample, mode="intersect"), "upset:intersection-bars")
+    dmap = {row[0]: y for row, y in zip(distinct.customdata, distinct.y, strict=True)}
+    imap = {row[0]: y for row, y in zip(intersect.customdata, intersect.y, strict=True)}
+    assert dmap["A & B"] == 2  # exclusive: in exactly A and B
+    assert imap["A & B"] == 3  # inclusive: in A and B (incl. A & B & C)
+
+
+def test_mode_axis_title(sample):
+    titles = [ax.title.text for ax in create_upset(sample, mode="union").select_yaxes()]
+    assert "Union size" in titles
+
+
+def test_invalid_mode_rejected(sample):
+    with pytest.raises(ValueError, match="mode must be one of"):
+        create_upset(sample, mode="nope")
+
+
 def test_custom_colors(sample):
     fig = create_upset(sample, color="#123456", inactive_color="#abcdef")
     assert trace(fig, "upset:intersection-bars").marker.color == "#123456"
