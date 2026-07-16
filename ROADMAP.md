@@ -5,9 +5,10 @@ revised together before implementation starts. It follows the same house style
 as the `dash-seqviz` specs: **Problem, Users, Scope, Data model, Interaction,
 Milestones, Non-goals, Open questions.**
 
-The one decision that must be made first is the **rendering engine**
-([Milestone 0](#milestone-0-decide-the-rendering-engine-blocking)). Everything
-downstream depends on it.
+The **rendering engine** decision
+([Milestone 0](#milestone-0-decide-the-rendering-engine-decided-option-b)) was
+made on 2026-07-16: **Option B, Plotly-native**. Everything downstream builds
+on it.
 
 ---
 
@@ -70,7 +71,7 @@ Two usage modes to support:
 
 ---
 
-## Milestone 0: decide the rendering engine (BLOCKING)
+## Milestone 0: decide the rendering engine (DECIDED: Option B)
 
 `dash-seqviz` wraps the MIT-licensed `seqviz` npm package. That playbook does
 **not** transfer directly, because the mature JS UpSet library is not
@@ -130,9 +131,9 @@ without rework.
 license and accepts an AGPL/commercial posture, which conflicts with shipping
 MIT.
 
-> Decision needed from you: confirm **B**, or choose **C** if you specifically
-> want the JS-wrapper architecture and are willing to fund the build. The rest
-> of this roadmap assumes **B** and notes where **C** would differ.
+> **Decision (2026-07-16): Option B confirmed.** The rest of this roadmap
+> assumes **B** and notes where **C** would differ; C stays in the back pocket
+> as the documented fallback if Plotly's interaction ceiling is reached (M5).
 
 ---
 
@@ -220,10 +221,13 @@ same.
 
 ## Milestones
 
-- **M0 -- Decision (blocking).** Agree on the rendering engine (this doc).
-- **M1 -- Data model + static figure.** `from_*` helpers, canonical model,
-  `create_upset(...) -> go.Figure` with matrix + both bar tracks + sorting.
-  Ship as `0.1.x`. Deliverable: render a correct UpSet figure in a notebook.
+- **M0 -- Decision. DONE (2026-07-16):** Option B, Plotly-native, packaged as
+  an AIO component.
+- **M1 -- Data model + static figure. DONE (2026-07-16):** `from_memberships` /
+  `from_contents` / `from_indicators` / `from_counts`, the canonical model
+  (`UpSetData`), and `create_upset(...) -> go.Figure` with matrix + both bar
+  tracks, sorting, and hover tooltips. Ships as `0.1.0`. Deliverable met:
+  renders a correct UpSet figure in a notebook (or any `dcc.Graph`).
 - **M2 -- Interactive AIO component.** `UpSet(...)` with hover, click-select,
   and `selected_intersection` / `selected_sets` outputs; example callback
   cross-filtering a table. Ship as `0.2.0`.
@@ -283,15 +287,15 @@ First-release checklist (when M1 is ready):
 
 ## Open questions (to decide together)
 
-1. **Rendering engine: B or C?** (Milestone 0.) Recommendation: B.
-2. **Depend on `upsetplot` (BSD) for data helpers, or reimplement the small
-   surface we need?** Leaning reimplement-the-conventions to keep the
-   dependency tree small, while staying API-compatible.
+1. ~~**Rendering engine: B or C?**~~ **Decided 2026-07-16: B** (Milestone 0).
+2. ~~**Depend on `upsetplot` (BSD) for data helpers, or reimplement?**~~
+   **Decided with M1: reimplement the conventions** (no `upsetplot`
+   dependency); the `from_*` input shapes stay familiar to `upsetplot` users.
 3. **Primary input shape for the docs/quick start** -- counts mapping (simplest
    to show) vs. `from_contents` (most common in practice)?
 4. **Orientation default** -- horizontal (publication-style) or vertical
    (scroll-friendly, matches UpSet.js)?
-5. **npm publishing** -- only relevant if Option C; skip for B.
+5. ~~**npm publishing**~~ -- moot: only relevant to Option C, and B was chosen.
 6. **Docs domain** -- dash-seqviz uses `dash-seqviz.com`. Do we want a
    `dash-upset.com` equivalent, or host under a shared docs domain?
 
