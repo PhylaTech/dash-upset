@@ -29,6 +29,8 @@ __all__ = [
     "MODES",
     "UpSetData",
     "UpSetIntersection",
+    "deviation",
+    "deviations",
     "from_contents",
     "from_counts",
     "from_indicators",
@@ -479,6 +481,46 @@ def subset_sizes(data: UpSetData, mode: str = "distinct") -> tuple[UpSetIntersec
     return tuple(result)
 
 
+def deviation(
+    size: float,
+    member_sets: frozenset[str],
+    set_sizes: Mapping[str, float],
+    total: float,
+) -> float:
+    """Signed deviation of an exclusive intersection from independence.
+
+    The difference between the observed fraction of elements in exactly
+    ``member_sets`` and the fraction expected if set memberships were
+    independent (each set's marginal probability applied, present for the
+    member sets and absent for the rest). Positive means the exclusive
+    intersection is larger than independence predicts ("surprising"); negative
+    means smaller. Defined for exclusive (distinct) intersections, per the
+    original UpSet paper (Lex et al., 2014).
+    """
+    if total <= 0:
+        return 0.0
+    observed = size / total
+    expected = 1.0
+    for name, set_size in set_sizes.items():
+        probability = set_size / total
+        expected *= probability if name in member_sets else (1.0 - probability)
+    return observed - expected
+
+
+def deviations(data: UpSetData) -> dict[frozenset[str], float]:
+    """Deviation-from-independence for every exclusive intersection.
+
+    Keyed by the frozenset of each intersection's member sets. See
+    :func:`deviation`.
+    """
+    total = data.total_size
+    set_sizes = dict(zip(data.set_names, data.set_sizes, strict=True))
+    return {
+        frozenset(entry.sets): deviation(entry.size, frozenset(entry.sets), set_sizes, total)
+        for entry in data.intersections
+    }
+
+
 def _direction(sort_by: str, valid: tuple[str, ...], what: str) -> tuple[str, bool]:
     reverse = sort_by.startswith("-")
     key = sort_by[1:] if reverse else sort_by
@@ -495,15 +537,17 @@ def sort_intersections(
     intersections: Sequence[UpSetIntersection],
     set_names: Sequence[str],
     sort_by: str = "cardinality",
+    deviation_map: Mapping[frozenset[str], float] | None = None,
 ) -> tuple[UpSetIntersection, ...]:
     """Order intersections for display.
 
     ``sort_by`` is one of ``"cardinality"`` (largest first), ``"degree"``
-    (fewest participating sets first, ties by size), or ``"input"`` (the
-    order they were built in). Prefix with ``-`` to reverse. Ties are broken
-    deterministically by the participating sets' display order.
+    (fewest participating sets first, ties by size), ``"deviation"`` (most
+    surprising first; requires ``deviation_map`` from :func:`deviations`), or
+    ``"input"`` (the order they were built in). Prefix with ``-`` to reverse.
+    Ties are broken deterministically by the participating sets' display order.
     """
-    key, reverse = _direction(sort_by, ("cardinality", "degree", "input"), "sort_by")
+    key, reverse = _direction(sort_by, ("cardinality", "degree", "deviation", "input"), "sort_by")
     index = {name: position for position, name in enumerate(set_names)}
 
     def combo_key(intersection: UpSetIntersection) -> tuple[int, ...]:
@@ -518,6 +562,17 @@ def sort_intersections(
         ordered = sorted(
             intersections,
             key=lambda entry: (entry.degree, -entry.size, combo_key(entry)),
+        )
+    elif key == "deviation":
+        if deviation_map is None:
+            raise ValueError("sorting by deviation requires deviation_map (see deviations())")
+        ordered = sorted(
+            intersections,
+            key=lambda entry: (
+                -deviation_map[frozenset(entry.sets)],
+                entry.degree,
+                combo_key(entry),
+            ),
         )
     else:
         ordered = list(intersections)

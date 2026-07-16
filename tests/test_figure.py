@@ -122,6 +122,19 @@ def test_rejects_all_empty_without_show_empty():
     assert len(trace(fig, "upset:intersection-bars").y) == 1
 
 
+def test_sort_by_deviation(sample):
+    bars = trace(create_upset(sample, sort_by="deviation"), "upset:intersection-bars")
+    labels = [row[0] for row in bars.customdata]
+    assert labels[0] == "A & B & C"  # most surprising-large intersection first
+
+
+def test_deviation_in_hover(sample):
+    bars = trace(create_upset(sample), "upset:intersection-bars")
+    # customdata carries a signed deviation string as its 4th field.
+    assert all(len(row) == 4 for row in bars.customdata)
+    assert bars.customdata[0][3].startswith(("+", "-"))
+
+
 def test_mode_changes_bar_heights(sample):
     distinct = trace(create_upset(sample), "upset:intersection-bars")
     intersect = trace(create_upset(sample, mode="intersect"), "upset:intersection-bars")

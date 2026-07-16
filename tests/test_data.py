@@ -12,7 +12,7 @@ from dash_upset import (
     from_indicators,
     from_memberships,
 )
-from dash_upset.data import sort_intersections, sort_sets, subset_sizes
+from dash_upset.data import deviations, sort_intersections, sort_sets, subset_sizes
 from tests.conftest import SAMPLE_IDS, SAMPLE_MEMBERSHIPS
 
 
@@ -314,6 +314,34 @@ class TestSubsetModes:
     def test_invalid_mode(self, sample):
         with pytest.raises(ValueError, match="mode must be one of"):
             subset_sizes(sample, "exclusive")
+
+
+class TestDeviation:
+    def test_values(self, sample):
+        # n=6; A=B=4, C=1. Hand-computed observed-minus-expected fractions.
+        dev = deviations(sample)
+        assert dev[frozenset({"A", "B", "C"})] == pytest.approx(0.09259, abs=1e-4)
+        assert dev[frozenset()] == pytest.approx(0.07407, abs=1e-4)
+        assert dev[frozenset({"A", "B"})] == pytest.approx(-0.03704, abs=1e-4)
+
+    def test_sort_most_surprising_first(self, sample):
+        dev = deviations(sample)
+        ordered = sort_intersections(
+            sample.intersections, sample.set_names, "deviation", deviation_map=dev
+        )
+        assert ordered[0].sets == ("A", "B", "C")  # largest positive deviation
+        assert ordered[-1].sets == ("A", "B")  # most negative
+
+    def test_sort_reversed(self, sample):
+        dev = deviations(sample)
+        ordered = sort_intersections(
+            sample.intersections, sample.set_names, "-deviation", deviation_map=dev
+        )
+        assert ordered[0].sets == ("A", "B")
+
+    def test_sort_requires_map(self, sample):
+        with pytest.raises(ValueError, match="deviation"):
+            sort_intersections(sample.intersections, sample.set_names, "deviation")
 
 
 def test_constructors_agree(sample):

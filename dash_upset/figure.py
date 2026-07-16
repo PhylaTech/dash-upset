@@ -18,7 +18,14 @@ from __future__ import annotations
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from .data import UpSetData, UpSetIntersection, sort_intersections, sort_sets, subset_sizes
+from .data import (
+    UpSetData,
+    UpSetIntersection,
+    deviations,
+    sort_intersections,
+    sort_sets,
+    subset_sizes,
+)
 
 __all__ = ["create_upset"]
 
@@ -106,7 +113,8 @@ def create_upset(
         )
 
     set_order = sort_sets(data.set_names, data.set_sizes, sort_sets_by)
-    intersections = sort_intersections(shown, set_order, sort_by)
+    deviation_map = deviations(data)
+    intersections = sort_intersections(shown, set_order, sort_by, deviation_map=deviation_map)
     size_of_set = dict(zip(data.set_names, data.set_sizes, strict=True))
     row_of_set = {name: row for row, name in enumerate(set_order)}
     n_sets = len(set_order)
@@ -145,13 +153,19 @@ def create_upset(
             width=0.6,
             marker={"color": color, "cornerradius": 4, "line": {"width": 0}},
             customdata=[
-                [label, entry.degree, _percent(entry.size, total)]
+                [
+                    label,
+                    entry.degree,
+                    _percent(entry.size, total),
+                    f"{100 * deviation_map[frozenset(entry.sets)]:+.1f}",
+                ]
                 for label, entry in zip(labels, intersections, strict=True)
             ],
             hovertemplate=(
                 "<b>%{customdata[0]}</b><br>"
                 "Size: %{y:,} (%{customdata[2]}% of total)<br>"
-                "Degree: %{customdata[1]}<extra></extra>"
+                "Degree: %{customdata[1]}<br>"
+                "Deviation: %{customdata[3]}%<extra></extra>"
             ),
             texttemplate="%{y:,}" if show_counts else None,
             textposition="outside",
