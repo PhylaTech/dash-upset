@@ -2,10 +2,11 @@
 
 Interactive [UpSet plots](https://upset.app) for [Plotly Dash](https://dash.plotly.com).
 
-> **Status: early development (pre-1.0).** This repository currently contains
-> the project scaffolding (packaging, environment, release automation, CI) and
-> a [roadmap](./ROADMAP.md). The rendering approach is an open decision that is
-> documented in the roadmap. The public API has not landed yet.
+> **Status: early development (pre-1.0).** The data model and the static
+> figure factory (`create_upset`, roadmap milestone M1) are implemented and
+> tested. The self-wiring `UpSet(...)` Dash component with click-selection
+> callbacks is next (M2); see the [roadmap](./ROADMAP.md). Not yet published
+> to PyPI or conda-forge.
 
 ## What is an UpSet plot?
 
@@ -24,13 +25,17 @@ callback-friendly component.
 
 ## Why this exists
 
-There is no first-class UpSet component for Dash. The most capable JavaScript
-implementation, [UpSet.js](https://upset.js.org), is licensed **AGPLv3** (a
-commercial license is required otherwise), which makes it unsuitable to wrap in
-a permissively licensed, publicly published library. `dash-upset` therefore
-builds an UpSet renderer on a clean, MIT-compatible foundation. See the
-[roadmap](./ROADMAP.md) for the full analysis and the options under
-consideration.
+There is no first-class UpSet component for Dash, and wrapping the existing
+JavaScript implementations has real costs: [UpSet.js](https://upset.js.org) is
+**AGPLv3** (unsuitable for a permissively licensed library), and while
+[UpSet 2.0](https://github.com/visdesignlab/upset2) is BSD-3-Clause, embedding
+its React stack would drag a JavaScript build toolchain and a heavy dependency
+tree into every app, and would give up notebook rendering and static export.
+`dash-upset` therefore composes the figure from Plotly primitives in pure
+Python: MIT-clean, notebook-friendly, no JavaScript build step, with
+`upset2-react` documented as the fallback engine if Plotly's interaction
+ceiling is ever reached. See the [roadmap](./ROADMAP.md) for the full analysis
+and the decision record.
 
 ## Installation
 
@@ -46,28 +51,57 @@ pip install dash-upset
 
 ## Quick start
 
-The component API is defined in the [roadmap](./ROADMAP.md) and will be filled
-in during the implementation phase. The intended shape is a drop-in Dash
-component fed a set-membership data structure:
+Build a data model with one of the `from_*` constructors, then render it with
+`create_upset`. For pre-aggregated intersection counts:
 
 ```python
-# Planned API (not yet implemented; see ROADMAP.md)
-from dash import Dash
-from dash_upset import UpSet
+from dash_upset import create_upset, from_counts
 
-app = Dash(__name__)
-app.layout = UpSet(
-    id="movies",
-    memberships={
+fig = create_upset(
+    from_counts({
         "Action": 320, "Comedy": 290, "Drama": 410,
         "Action&Comedy": 84, "Action&Drama": 120, "Comedy&Drama": 96,
         "Action&Comedy&Drama": 40,
-    },
+    }),
+    title="Movie genres",
 )
+fig.show()  # a plain plotly Figure: notebooks, scripts, static export
+```
+
+Element-level data uses the familiar
+[`upsetplot`](https://upsetplot.readthedocs.io) conventions:
+
+```python
+from dash_upset import from_contents, from_indicators, from_memberships
+
+from_memberships([("A",), ("A", "B"), ()])          # per-element set names
+from_contents({"A": ["x", "y"], "B": ["y", "z"]})   # per-set element ids
+from_indicators(boolean_dataframe)                  # rows = elements, columns = sets
+```
+
+`from_indicators` is dataframe-agnostic via
+[narwhals](https://github.com/narwhals-dev/narwhals): pandas, Polars, PyArrow,
+cuDF, and Modin frames (or a plain dict of boolean columns) all work, and
+`dash-upset` itself depends on none of those libraries.
+
+Sorting and display are controlled per figure, e.g.
+`create_upset(data, sort_by="degree", sort_sets_by="name", show_counts=False)`.
+
+In a Dash app today, embed the figure in a `dcc.Graph`:
+
+```python
+from dash import Dash, dcc
+from dash_upset import create_upset, from_contents
+
+app = Dash(__name__)
+app.layout = dcc.Graph(figure=create_upset(from_contents({...})))
 
 if __name__ == "__main__":
     app.run(debug=True)
 ```
+
+The self-wiring `UpSet(...)` component (hover/click selection exposed as
+callback outputs) is roadmap milestone M2.
 
 ## Development
 
@@ -87,8 +121,12 @@ releases.
 
 - [UpSet](https://upset.app) and the original research by Lex, Gehlenborg,
   et al. define the technique.
-- [UpSet.js](https://upset.js.org) by Samuel Gratzl is the reference
-  interactive JS implementation (AGPLv3 / commercial).
+- [UpSet 2.0](https://github.com/visdesignlab/upset2) by the Visualization
+  Design Lab (BSD-3-Clause) is the technique authors' interactive
+  reimplementation and the documented candidate engine should this library
+  ever add a JavaScript renderer (see the roadmap).
+- [UpSet.js](https://upset.js.org) by Samuel Gratzl is an interactive JS
+  implementation (AGPLv3 / commercial).
 - [`upsetplot`](https://upsetplot.readthedocs.io) by Joel Nothman (BSD-3-Clause)
   is the established matplotlib-based Python package; `dash-upset` mirrors its
   familiar data-input conventions.

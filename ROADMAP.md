@@ -5,9 +5,16 @@ revised together before implementation starts. It follows the same house style
 as the `dash-seqviz` specs: **Problem, Users, Scope, Data model, Interaction,
 Milestones, Non-goals, Open questions.**
 
-The one decision that must be made first is the **rendering engine**
-([Milestone 0](#milestone-0-decide-the-rendering-engine-blocking)). Everything
-downstream depends on it.
+The **rendering engine** decision
+([Milestone 0](#milestone-0-decide-the-rendering-engine-decided-option-b)) was
+made on 2026-07-16: **Option B, Plotly-native**. Everything downstream builds
+on it.
+
+The feature set and interaction model below are informed by
+[SURVEY.md](./SURVEY.md), a competitive survey of the existing UpSet ecosystem
+(JavaScript/web, Python, R) and the technique's conceptual model. Read it for
+the reasoning behind the scope choices, the feature-comparison matrix, and the
+prioritized recommendations folded into the milestones here.
 
 ---
 
@@ -48,17 +55,34 @@ Two usage modes to support:
 
 - A reusable Dash component rendering the three core UpSet elements: the
   intersection **matrix**, **set-size bars**, and **intersection-size bars**.
-- **Sorting** of intersections (by size / cardinality, by degree, by set
-  membership) and of sets (by size, by name).
-- **Filtering**: minimum intersection size, maximum degree, top-N
-  intersections, hide-empty.
+- **Intersection modes** (`distinct` / `intersect` / `union`), defaulting to
+  `distinct` (the canonical exclusive intersection). The survey found this is
+  the feature most quick ports omit and the concept users most often misread; it
+  is compute-only and renders identically, so it is high-value and low-cost.
+- **Sorting** of intersections (by size / cardinality, by degree, by
+  **deviation**) and of sets (by size, by name), with deterministic
+  leftmost-set tie-breaking.
+- **Deviation** column: the signed "how surprising is this intersection given
+  the set sizes" measure from the original paper (a low-cost analytic that
+  differentiates us from UpSetR).
+- **Filtering**: minimum/maximum intersection size, minimum/maximum degree,
+  top-N intersections, hide-empty.
 - **Interactivity**: hover tooltips, click-to-select an intersection (or set),
   and callback outputs that report the current selection so a dashboard can
-  cross-filter.
+  cross-filter. Component API shape follows UpSet.js's stateless
+  controlled-component contract (selection as a prop, hover/click as events).
+- **Per-intersection attribute subplots**: a curated vocabulary (box, violin,
+  strip, scatter, histogram, stacked-bar) sharing the intersection axis, in the
+  spirit of `upsetplot`'s `add_catplot` and ComplexUpset annotations. Requires
+  the data model to carry per-element attributes.
+- **Auto-generated text descriptions** (short alt-text + a structured long
+  description), following the 2025 EuroVis accessibility work. Nearly free in
+  Python and offered by no other Python library.
 - **Theming**: honor Plotly templates and a light/dark story consistent with
   the `dash-seqviz` look; configurable colors.
 - Familiar **data-input helpers** modeled on `upsetplot`
-  (`from_memberships`, `from_contents`, `from_indicators`).
+  (`from_memberships`, `from_contents`, `from_indicators`), plus a counts-only
+  `from_counts` (our addition; prior art is UpSetR's `fromExpression`).
 
 ## Scope (out) for the first stable release
 
@@ -70,7 +94,7 @@ Two usage modes to support:
 
 ---
 
-## Milestone 0: decide the rendering engine (BLOCKING)
+## Milestone 0: decide the rendering engine (DECIDED: Option B)
 
 `dash-seqviz` wraps the MIT-licensed `seqviz` npm package. That playbook does
 **not** transfer directly, because the mature JS UpSet library is not
@@ -86,6 +110,9 @@ permissively licensed. We must pick a foundation before writing component code.
 - **`upsetplot`** (Joel Nothman) is **BSD-3-Clause** and safe to depend on or
   learn from, but it renders with matplotlib (static images, no native Dash
   interactivity).
+- **UpSet 2.0** (`visdesignlab/upset2`, the technique authors' own web
+  reimplementation) is **BSD-3-Clause**, so unlike UpSet.js it *could* be
+  wrapped. See the addendum below for what that does and does not change.
 - Building UpSet from Plotly primitives is well-trodden and MIT-clean
   (community `figure_factory` attempts; the `plotly-upset` and `UpSetPlotly`
   packages).
@@ -130,9 +157,37 @@ without rework.
 license and accepts an AGPL/commercial posture, which conflicts with shipping
 MIT.
 
-> Decision needed from you: confirm **B**, or choose **C** if you specifically
-> want the JS-wrapper architecture and are willing to fund the build. The rest
-> of this roadmap assumes **B** and notes where **C** would differ.
+> **Decision (2026-07-16): Option B confirmed.** The rest of this roadmap
+> assumes **B** and notes where **C** would differ; C stays in the back pocket
+> as the documented fallback if Plotly's interaction ceiling is reached (M5).
+
+### Addendum (2026-07-16): UpSet 2.0 is BSD-3 and upgrades Option C
+
+**UpSet 2.0** ([visdesignlab/upset2](https://github.com/visdesignlab/upset2)),
+by the lab behind the original UpSet technique, is **BSD-3-Clause** and
+publishes an embeddable renderer, `@visdesignlab/upset2-react`, plus
+`@visdesignlab/upset2-core` for the data layer (data input: an array of
+objects with boolean set-membership fields and optional attribute columns).
+Unlike UpSet.js, it could legally be wrapped in this MIT library, so the "no
+permissive mature JS implementation" premise above no longer holds in full.
+
+This does not change the Option B decision, because the other B-vs-C factors
+are unchanged. Wrapping upset2-react would still mean the npm/webpack
+toolchain and dual-language maintenance that B avoids, Dash-only rendering (no
+notebook figures, no kaleido static export), and a heavy embed: upset2-react
+peer-depends on React 18/19, MUI (`material`, `icons-material`, `system`,
+`x-data-grid`), Emotion, Recoil, Trrack (`core` + `vis-react`), and
+Vega/Vega-Lite (`vega`, `vega-lite`, `vega-embed`, `react-vega`), which every
+consuming Dash app would carry.
+
+What it does change is the cost and shape of **Option C**: "build a React
+UpSet renderer from scratch" becomes "wrap `upset2-react`", which would also
+bring UpSet 2.0's advanced features (element and attribute views,
+provenance/undo via Trrack, generated alt text for accessibility) within
+reach. **If Plotly's interaction ceiling is hit (M5), evaluate wrapping
+`upset2-react` before building anything custom.** Its alt-text work is also
+worth borrowing ideas from for the M3 accessibility pass, independent of the
+engine question.
 
 ---
 
@@ -148,8 +203,11 @@ Accepted inputs:
   optional per-point values to aggregate). Best when you have raw records.
 - **`from_contents`** -- `{set_name: iterable_of_element_ids}`. Best when you
   have membership lists per set.
-- **`from_indicators`** -- a boolean DataFrame (rows = elements, columns =
-  sets, `True` = member). Best when data already lives in a table.
+- **`from_indicators`** -- a boolean indicator table (rows = elements, columns
+  = sets, `True` = member) from any narwhals-supported dataframe library
+  (pandas, Polars, PyArrow, cuDF, Modin, ...) or a plain mapping of columns.
+  Best when data already lives in a table. Dataframe access goes through
+  **narwhals**, so `dash-upset` depends on no dataframe library itself.
 - A convenience **counts mapping** for pre-aggregated data:
   `{"Action&Drama": 120, ...}` (the shape shown in the README quick start).
 
@@ -220,22 +278,32 @@ same.
 
 ## Milestones
 
-- **M0 -- Decision (blocking).** Agree on the rendering engine (this doc).
-- **M1 -- Data model + static figure.** `from_*` helpers, canonical model,
-  `create_upset(...) -> go.Figure` with matrix + both bar tracks + sorting.
-  Ship as `0.1.x`. Deliverable: render a correct UpSet figure in a notebook.
+- **M0 -- Decision. DONE (2026-07-16):** Option B, Plotly-native, packaged as
+  an AIO component.
+- **M1 -- Data model + static figure. DONE (2026-07-16):** `from_memberships` /
+  `from_contents` / `from_indicators` / `from_counts`, the canonical model
+  (`UpSetData`), and `create_upset(...) -> go.Figure` with matrix + both bar
+  tracks, sorting, and hover tooltips. Ships as `0.1.0`. Deliverable met:
+  renders a correct UpSet figure in a notebook (or any `dcc.Graph`).
 - **M2 -- Interactive AIO component.** `UpSet(...)` with hover, click-select,
-  and `selected_intersection` / `selected_sets` outputs; example callback
-  cross-filtering a table. Ship as `0.2.0`.
-- **M3 -- Filtering, theming, polish.** min-size / max-degree / top-N,
-  light/dark + Plotly templates, vertical orientation, accessibility pass.
-  `0.3.0`.
+  and `selected_intersection` / `selected_sets` outputs (UpSet.js-style
+  stateless controlled-component contract); drill-into-members element table;
+  example callback cross-filtering a table. Ship as `0.2.0`.
+- **M3 -- Analysis semantics, filtering, theming, polish.** Intersection
+  `mode=` (distinct/intersect/union); deviation column + sort-by-deviation;
+  min/max size, min/max degree, top-N filtering; count/percentage labels;
+  light/dark + Plotly templates; vertical orientation; auto text descriptions
+  (short + long) and the rest of the accessibility pass. `0.3.0`.
 - **M4 -- Docs site + examples.** GitHub Pages (mirroring dash-seqviz's `docs/`
   approach) with live examples; conda-forge feedstock; first `1.0.0` when the
   API is stable.
-- **M5 -- Advanced views (post-1.0).** Element/attribute views (box/scatter per
-  attribute), saved queries, aggregation by degree/sets. This is where Option C
-  may become worthwhile if Plotly's ceiling is reached.
+- **M5 -- Advanced views (post-1.0).** Per-intersection attribute subplots
+  (box/violin/strip/scatter/histogram, needing an attribute-carrying data
+  model), query/highlight DSL, aggregation by degree/sets/overlaps, and
+  bookmarks + undo/redo (a light `dcc.Store` Trrack analog). This is where
+  Option C may become worthwhile if Plotly's ceiling is reached (evaluate
+  wrapping the BSD-3 `upset2-react` first; see the M0 addendum). Priorities and
+  the full feature landscape are in [SURVEY.md](./SURVEY.md).
 
 ## Testing strategy
 
@@ -283,23 +351,32 @@ First-release checklist (when M1 is ready):
 
 ## Open questions (to decide together)
 
-1. **Rendering engine: B or C?** (Milestone 0.) Recommendation: B.
-2. **Depend on `upsetplot` (BSD) for data helpers, or reimplement the small
-   surface we need?** Leaning reimplement-the-conventions to keep the
-   dependency tree small, while staying API-compatible.
+1. ~~**Rendering engine: B or C?**~~ **Decided 2026-07-16: B** (Milestone 0).
+2. ~~**Depend on `upsetplot` (BSD) for data helpers, or reimplement?**~~
+   **Decided with M1: reimplement the conventions** (no `upsetplot`
+   dependency); the `from_*` input shapes stay familiar to `upsetplot` users.
 3. **Primary input shape for the docs/quick start** -- counts mapping (simplest
    to show) vs. `from_contents` (most common in practice)?
 4. **Orientation default** -- horizontal (publication-style) or vertical
    (scroll-friendly, matches UpSet.js)?
-5. **npm publishing** -- only relevant if Option C; skip for B.
+5. ~~**npm publishing**~~ -- moot: only relevant to Option C, and B was chosen.
 6. **Docs domain** -- dash-seqviz uses `dash-seqviz.com`. Do we want a
    `dash-upset.com` equivalent, or host under a shared docs domain?
 
 ## References
 
+- [SURVEY.md](./SURVEY.md) -- our competitive survey of the UpSet ecosystem
+  (JavaScript/web, Python, R), the feature-comparison matrix, and the
+  prioritized recommendations folded into the milestones above.
 - UpSet technique and interactive reference: https://upset.app
+- UpSet 2.0 (BSD-3-Clause, React; the technique authors' implementation):
+  https://github.com/visdesignlab/upset2
 - UpSet.js (AGPLv3): https://upset.js.org
 - `upsetplot` (BSD, matplotlib): https://upsetplot.readthedocs.io
+- ComplexUpset (R, the feature-completeness benchmark):
+  https://krassowski.github.io/complex-upset/
+- Accessible text descriptions for UpSet (EuroVis 2025):
+  https://vdl.sci.utah.edu/publications/2025_eurovis_text-descriptions/
 - Dash All-in-One components: https://dash.plotly.com/all-in-one-components
 - Community Plotly UpSet discussion:
   https://community.plotly.com/t/plotly-upset-plot/63858

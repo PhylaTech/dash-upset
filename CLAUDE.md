@@ -3,6 +3,9 @@
 Orientation for Claude Code sessions opened in this folder. Read this first.
 The living plan is [ROADMAP.md](./ROADMAP.md); this file tells you what the
 project is, where we left off, and how to work here.
+[SURVEY.md](./SURVEY.md) is the competitive survey of the UpSet ecosystem that
+informs the roadmap's feature set and API vocabulary; consult it before
+designing a new feature.
 
 ## What this is
 
@@ -13,43 +16,41 @@ which is the template for the overall project shape. PhylaTech is the
 organization that the Full Spectrum Analytics (FSA) tools, including
 dash-seqviz, are being migrated to.
 
-## Current status (as of 2026-07-16): scaffolded, pre-implementation
+## Current status (as of 2026-07-16): M1 implemented, engine decided
 
-The repository scaffolding is complete and verified: the pixi environment
-solves, and `pixi run lint` + `pixi run test` pass. **No component code exists
-yet.** One decision blocks implementation.
+**ROADMAP Milestone 0 is decided: Option B, Plotly-native** (pure Python,
+`go.Bar` + `go.Scatter` composed via subplots, to be packaged as a Dash
+All-in-One component in M2). The decision record and the full option analysis
+live in ROADMAP.md. Option C (a React renderer behind the same Python API)
+remains the documented fallback if Plotly's interaction ceiling is ever
+reached; the candidate engine for it is the **BSD-3 `@visdesignlab/upset2-react`**
+(UpSet 2.0, by the technique's authors; see the ROADMAP M0 addendum), while
+UpSet.js stays off the table (AGPLv3).
 
-### BLOCKING DECISION: choose the rendering engine (ROADMAP Milestone 0)
+**M1 (data model + static figure) is implemented and tested:**
 
-How UpSet plots get rendered must be decided before any component code is
-written. The dash-seqviz playbook (wrap a mature MIT JavaScript library) does
-NOT transfer here, because the mature JS UpSet library, **UpSet.js, is AGPLv3**
-and cannot be wrapped in an MIT-licensed library. Two MIT-clean options remain
-(full pros/cons are in ROADMAP.md and were discussed with the user):
+- `dash_upset/data.py` -- the canonical `UpSetData` model plus
+  `from_memberships` / `from_contents` / `from_indicators` (upsetplot-style
+  conventions, reimplemented, no upsetplot dependency) and a `from_counts`
+  convenience for pre-aggregated data. `from_indicators` is
+  dataframe-agnostic via **narwhals** (`narwhals.stable.v2`): pandas, Polars,
+  PyArrow, cuDF, and Modin all work, and the package depends on narwhals
+  rather than pandas (pandas + polars are dev-only test deps). Python floor
+  is 3.10 (narwhals 2 requires it; 3.9 is EOL).
+- `dash_upset/figure.py` -- `create_upset(...) -> go.Figure`: intersection-size
+  bars, set-size bars, dot matrix with connectors, sorting
+  (`sort_by`/`sort_sets_by`), `show_empty`/`show_counts`, hover tooltips with
+  percentages. Traces carry stable `meta` ids so the M2 component can address
+  them.
+- Behavioral tests in `tests/test_data.py` and `tests/test_figure.py`;
+  `pixi run lint` + `pixi run test` pass.
 
-- **Option B (recommended): Plotly-native, pure Python, Dash All-in-One
-  component.** Compose `go.Bar` (set-size and intersection-size bars) with a
-  `go.Scatter` dot matrix; ship a self-wiring `UpSet(...)` component plus a
-  `create_upset(...) -> go.Figure` factory. Fast to ship, single language,
-  reusable in notebooks, free publication-quality static export via kaleido.
-  Interactivity is bounded by Plotly's model.
-- **Option C: custom MIT React component** (dash-seqviz-style JS wrapper via the
-  Dash component boilerplate). Best interactivity and pixel fidelity, but a
-  large multi-week build, dual-language maintenance, and Dash-only (no notebook
-  reuse, no free static export).
+## Next step: M2 (interactive AIO component)
 
-B and C are not a permanent fork: B-first is low-regret, and a React renderer
-can later slot behind the same Python API if Plotly's interaction ceiling is
-reached. **Do not start component implementation until the user confirms the
-engine.** If the user has since decided, update this section and ROADMAP
-Milestone 0 to record the choice.
-
-## Next step (once the engine is chosen)
-
-M1: build the data model (`from_memberships` / `from_contents` /
-`from_indicators`, mirroring the BSD-licensed `upsetplot` conventions) and a
-`create_upset(...) -> go.Figure` static figure. See the "Milestones" section of
-ROADMAP.md.
+Build the self-wiring `UpSet(...)` Dash All-in-One component: `dcc.Graph` +
+pattern-matching callbacks, click-to-select via the bar traces' `meta` /
+`customdata`, and `selected_intersection` / `selected_sets` outputs. See the
+"Milestones" section of ROADMAP.md and its Interaction/UX prop sketch.
 
 ## Working conventions
 
@@ -73,10 +74,10 @@ ROADMAP.md.
 
 ## Layout
 
-- `dash_upset/` -- the package (currently only `__init__.py`; component modules
-  arrive in M1, e.g. `data.py`, `figure.py`, `component.py`, `theming.py` per
-  the ROADMAP architecture sketch for Option B).
-- `tests/` -- pytest (smoke tests today; behavioral tests land with M1).
+- `dash_upset/` -- the package: `data.py` (model + `from_*` constructors) and
+  `figure.py` (`create_upset`); `component.py` and `theming.py` arrive with
+  M2/M3 per the ROADMAP architecture sketch.
+- `tests/` -- pytest (`test_data.py`, `test_figure.py`, import smoke tests).
 - `pyproject.toml` -- packaging (hatchling) plus pixi, ruff, and pytest config.
 - Release automation: `release-please-config.json`,
   `.release-please-manifest.json`, and `.github/workflows/`
@@ -90,8 +91,10 @@ ROADMAP.md.
 - Sibling and template project: `../dash-seqviz` (a Dash component wrapping the
   MIT `seqviz` npm library; it uses mamba and `setup.py`, whereas dash-upset
   uses pixi and `pyproject.toml`).
-- Prior art: `upsetplot` (BSD, matplotlib) for the data-input conventions, and
-  UpSet.js (AGPL) as the interactive reference implementation we are explicitly
-  NOT wrapping.
-- No GitHub remote has been created or pushed yet; the local repo lives at
+- Prior art: `upsetplot` (BSD, matplotlib) for the data-input conventions;
+  UpSet 2.0 (`visdesignlab/upset2`, BSD-3) as the license-clean React engine
+  candidate if Option C is ever triggered (ROADMAP M0 addendum); and UpSet.js
+  (AGPL) as the implementation we are explicitly NOT wrapping.
+- GitHub remote: `https://github.com/PhylaTech/dash-upset` (created private;
+  flip visibility when ready to publish). The local repo lives at
   `/Users/evan/fsa/dash-upset` on branch `main`.
