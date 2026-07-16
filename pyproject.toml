@@ -54,7 +54,7 @@ path = "dash_upset/__init__.py"
 packages = ["dash_upset"]
 
 [tool.hatch.build.targets.sdist]
-include = ["dash_upset", "README.md", "LICENSE", "ROADMAP.md"]
+include = ["dash_upset", "README.md", "LICENSE", "ROADMAP.md", "SURVEY.md"]
 
 # ---------------------------------------------------------------------------
 # Ruff (lint + format)

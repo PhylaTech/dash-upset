@@ -10,6 +10,12 @@ The **rendering engine** decision
 made on 2026-07-16: **Option B, Plotly-native**. Everything downstream builds
 on it.
 
+The feature set and interaction model below are informed by
+[SURVEY.md](./SURVEY.md), a competitive survey of the existing UpSet ecosystem
+(JavaScript/web, Python, R) and the technique's conceptual model. Read it for
+the reasoning behind the scope choices, the feature-comparison matrix, and the
+prioritized recommendations folded into the milestones here.
+
 ---
 
 ## Problem
@@ -49,17 +55,34 @@ Two usage modes to support:
 
 - A reusable Dash component rendering the three core UpSet elements: the
   intersection **matrix**, **set-size bars**, and **intersection-size bars**.
-- **Sorting** of intersections (by size / cardinality, by degree, by set
-  membership) and of sets (by size, by name).
-- **Filtering**: minimum intersection size, maximum degree, top-N
-  intersections, hide-empty.
+- **Intersection modes** (`distinct` / `intersect` / `union`), defaulting to
+  `distinct` (the canonical exclusive intersection). The survey found this is
+  the feature most quick ports omit and the concept users most often misread; it
+  is compute-only and renders identically, so it is high-value and low-cost.
+- **Sorting** of intersections (by size / cardinality, by degree, by
+  **deviation**) and of sets (by size, by name), with deterministic
+  leftmost-set tie-breaking.
+- **Deviation** column: the signed "how surprising is this intersection given
+  the set sizes" measure from the original paper (a low-cost analytic that
+  differentiates us from UpSetR).
+- **Filtering**: minimum/maximum intersection size, minimum/maximum degree,
+  top-N intersections, hide-empty.
 - **Interactivity**: hover tooltips, click-to-select an intersection (or set),
   and callback outputs that report the current selection so a dashboard can
-  cross-filter.
+  cross-filter. Component API shape follows UpSet.js's stateless
+  controlled-component contract (selection as a prop, hover/click as events).
+- **Per-intersection attribute subplots**: a curated vocabulary (box, violin,
+  strip, scatter, histogram, stacked-bar) sharing the intersection axis, in the
+  spirit of `upsetplot`'s `add_catplot` and ComplexUpset annotations. Requires
+  the data model to carry per-element attributes.
+- **Auto-generated text descriptions** (short alt-text + a structured long
+  description), following the 2025 EuroVis accessibility work. Nearly free in
+  Python and offered by no other Python library.
 - **Theming**: honor Plotly templates and a light/dark story consistent with
   the `dash-seqviz` look; configurable colors.
 - Familiar **data-input helpers** modeled on `upsetplot`
-  (`from_memberships`, `from_contents`, `from_indicators`).
+  (`from_memberships`, `from_contents`, `from_indicators`), plus a counts-only
+  `from_counts` (our addition; prior art is UpSetR's `fromExpression`).
 
 ## Scope (out) for the first stable release
 
@@ -263,18 +286,24 @@ same.
   tracks, sorting, and hover tooltips. Ships as `0.1.0`. Deliverable met:
   renders a correct UpSet figure in a notebook (or any `dcc.Graph`).
 - **M2 -- Interactive AIO component.** `UpSet(...)` with hover, click-select,
-  and `selected_intersection` / `selected_sets` outputs; example callback
-  cross-filtering a table. Ship as `0.2.0`.
-- **M3 -- Filtering, theming, polish.** min-size / max-degree / top-N,
-  light/dark + Plotly templates, vertical orientation, accessibility pass.
-  `0.3.0`.
+  and `selected_intersection` / `selected_sets` outputs (UpSet.js-style
+  stateless controlled-component contract); drill-into-members element table;
+  example callback cross-filtering a table. Ship as `0.2.0`.
+- **M3 -- Analysis semantics, filtering, theming, polish.** Intersection
+  `mode=` (distinct/intersect/union); deviation column + sort-by-deviation;
+  min/max size, min/max degree, top-N filtering; count/percentage labels;
+  light/dark + Plotly templates; vertical orientation; auto text descriptions
+  (short + long) and the rest of the accessibility pass. `0.3.0`.
 - **M4 -- Docs site + examples.** GitHub Pages (mirroring dash-seqviz's `docs/`
   approach) with live examples; conda-forge feedstock; first `1.0.0` when the
   API is stable.
-- **M5 -- Advanced views (post-1.0).** Element/attribute views (box/scatter per
-  attribute), saved queries, aggregation by degree/sets. This is where Option C
-  may become worthwhile if Plotly's ceiling is reached (evaluate wrapping the
-  BSD-3 `upset2-react` first; see the M0 addendum).
+- **M5 -- Advanced views (post-1.0).** Per-intersection attribute subplots
+  (box/violin/strip/scatter/histogram, needing an attribute-carrying data
+  model), query/highlight DSL, aggregation by degree/sets/overlaps, and
+  bookmarks + undo/redo (a light `dcc.Store` Trrack analog). This is where
+  Option C may become worthwhile if Plotly's ceiling is reached (evaluate
+  wrapping the BSD-3 `upset2-react` first; see the M0 addendum). Priorities and
+  the full feature landscape are in [SURVEY.md](./SURVEY.md).
 
 ## Testing strategy
 
@@ -336,11 +365,18 @@ First-release checklist (when M1 is ready):
 
 ## References
 
+- [SURVEY.md](./SURVEY.md) -- our competitive survey of the UpSet ecosystem
+  (JavaScript/web, Python, R), the feature-comparison matrix, and the
+  prioritized recommendations folded into the milestones above.
 - UpSet technique and interactive reference: https://upset.app
 - UpSet 2.0 (BSD-3-Clause, React; the technique authors' implementation):
   https://github.com/visdesignlab/upset2
 - UpSet.js (AGPLv3): https://upset.js.org
 - `upsetplot` (BSD, matplotlib): https://upsetplot.readthedocs.io
+- ComplexUpset (R, the feature-completeness benchmark):
+  https://krassowski.github.io/complex-upset/
+- Accessible text descriptions for UpSet (EuroVis 2025):
+  https://vdl.sci.utah.edu/publications/2025_eurovis_text-descriptions/
 - Dash All-in-One components: https://dash.plotly.com/all-in-one-components
 - Community Plotly UpSet discussion:
   https://community.plotly.com/t/plotly-upset-plot/63858

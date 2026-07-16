@@ -3,6 +3,9 @@
 Orientation for Claude Code sessions opened in this folder. Read this first.
 The living plan is [ROADMAP.md](./ROADMAP.md); this file tells you what the
 project is, where we left off, and how to work here.
+[SURVEY.md](./SURVEY.md) is the competitive survey of the UpSet ecosystem that
+informs the roadmap's feature set and API vocabulary; consult it before
+designing a new feature.
 
 ## What this is
 
