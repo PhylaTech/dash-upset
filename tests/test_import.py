@@ -1,7 +1,7 @@
-"""Smoke tests for the dash_upset package skeleton.
+"""Smoke tests for dash_upset packaging.
 
-These verify the package is importable and correctly packaged. Behavioral tests
-for the UpSet API arrive with the implementation phase (see ROADMAP.md).
+These verify the package is importable and correctly packaged. Behavioral
+tests live in ``test_data.py`` and ``test_figure.py``.
 """
 
 import dash_upset
