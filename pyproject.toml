@@ -1,0 +1,102 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dash-upset"
+dynamic = ["version"]
+description = "Interactive UpSet plots for Plotly Dash"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Evan Rees", email = "evanroyrees@gmail.com" }]
+requires-python = ">=3.9"
+keywords = [
+    "dash",
+    "plotly",
+    "upset",
+    "upset-plot",
+    "set-visualization",
+    "venn",
+    "intersections",
+    "visualization",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Dash",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = [
+    "dash>=3.0.0",
+    "plotly>=5.20",
+    "pandas>=1.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/PhylaTech/dash-upset"
+Repository = "https://github.com/PhylaTech/dash-upset"
+Issues = "https://github.com/PhylaTech/dash-upset/issues"
+
+# Single source of truth for the version: dash_upset/__init__.py::__version__
+# (release-please's python strategy bumps that line on release).
+[tool.hatch.version]
+path = "dash_upset/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["dash_upset"]
+
+[tool.hatch.build.targets.sdist]
+include = ["dash_upset", "README.md", "LICENSE", "ROADMAP.md"]
+
+# ---------------------------------------------------------------------------
+# Ruff (lint + format)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B", "C4"]
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-rsxX -vv"
+
+# ---------------------------------------------------------------------------
+# Pixi (environment + task runner). Deps come from conda-forge; the package
+# itself is installed editable so `import dash_upset` works inside the env.
+# ---------------------------------------------------------------------------
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "osx-64", "linux-64", "win-64"]
+
+[tool.pixi.dependencies]
+python = ">=3.9"
+dash = ">=3"
+plotly = ">=5.20"
+pandas = ">=1.5"
+
+[tool.pixi.pypi-dependencies]
+dash-upset = { path = ".", editable = true }
+
+[tool.pixi.feature.dev.dependencies]
+pytest = ">=7"
+ruff = ">=0.5"
+
+[tool.pixi.environments]
+default = { features = ["dev"], solve-group = "default" }
+
+[tool.pixi.tasks]
+test = "pytest"
+lint = "ruff check ."
+format = "ruff format ."
