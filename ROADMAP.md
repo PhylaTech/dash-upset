@@ -87,6 +87,9 @@ permissively licensed. We must pick a foundation before writing component code.
 - **`upsetplot`** (Joel Nothman) is **BSD-3-Clause** and safe to depend on or
   learn from, but it renders with matplotlib (static images, no native Dash
   interactivity).
+- **UpSet 2.0** (`visdesignlab/upset2`, the technique authors' own web
+  reimplementation) is **BSD-3-Clause**, so unlike UpSet.js it *could* be
+  wrapped. See the addendum below for what that does and does not change.
 - Building UpSet from Plotly primitives is well-trodden and MIT-clean
   (community `figure_factory` attempts; the `plotly-upset` and `UpSetPlotly`
   packages).
@@ -134,6 +137,34 @@ MIT.
 > **Decision (2026-07-16): Option B confirmed.** The rest of this roadmap
 > assumes **B** and notes where **C** would differ; C stays in the back pocket
 > as the documented fallback if Plotly's interaction ceiling is reached (M5).
+
+### Addendum (2026-07-16): UpSet 2.0 is BSD-3 and upgrades Option C
+
+**UpSet 2.0** ([visdesignlab/upset2](https://github.com/visdesignlab/upset2)),
+by the lab behind the original UpSet technique, is **BSD-3-Clause** and
+publishes an embeddable renderer, `@visdesignlab/upset2-react`, plus
+`@visdesignlab/upset2-core` for the data layer (data input: an array of
+objects with boolean set-membership fields and optional attribute columns).
+Unlike UpSet.js, it could legally be wrapped in this MIT library, so the "no
+permissive mature JS implementation" premise above no longer holds in full.
+
+This does not change the Option B decision, because the other B-vs-C factors
+are unchanged. Wrapping upset2-react would still mean the npm/webpack
+toolchain and dual-language maintenance that B avoids, Dash-only rendering (no
+notebook figures, no kaleido static export), and a heavy embed: upset2-react
+peer-depends on React 18/19, MUI (`material`, `icons-material`, `system`,
+`x-data-grid`), Emotion, Recoil, Trrack (`core` + `vis-react`), and
+Vega/Vega-Lite (`vega`, `vega-lite`, `vega-embed`, `react-vega`), which every
+consuming Dash app would carry.
+
+What it does change is the cost and shape of **Option C**: "build a React
+UpSet renderer from scratch" becomes "wrap `upset2-react`", which would also
+bring UpSet 2.0's advanced features (element and attribute views,
+provenance/undo via Trrack, generated alt text for accessibility) within
+reach. **If Plotly's interaction ceiling is hit (M5), evaluate wrapping
+`upset2-react` before building anything custom.** Its alt-text work is also
+worth borrowing ideas from for the M3 accessibility pass, independent of the
+engine question.
 
 ---
 
@@ -242,7 +273,8 @@ same.
   API is stable.
 - **M5 -- Advanced views (post-1.0).** Element/attribute views (box/scatter per
   attribute), saved queries, aggregation by degree/sets. This is where Option C
-  may become worthwhile if Plotly's ceiling is reached.
+  may become worthwhile if Plotly's ceiling is reached (evaluate wrapping the
+  BSD-3 `upset2-react` first; see the M0 addendum).
 
 ## Testing strategy
 
@@ -305,6 +337,8 @@ First-release checklist (when M1 is ready):
 ## References
 
 - UpSet technique and interactive reference: https://upset.app
+- UpSet 2.0 (BSD-3-Clause, React; the technique authors' implementation):
+  https://github.com/visdesignlab/upset2
 - UpSet.js (AGPLv3): https://upset.js.org
 - `upsetplot` (BSD, matplotlib): https://upsetplot.readthedocs.io
 - Dash All-in-One components: https://dash.plotly.com/all-in-one-components

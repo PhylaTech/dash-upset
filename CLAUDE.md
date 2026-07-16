@@ -18,9 +18,11 @@ dash-seqviz, are being migrated to.
 **ROADMAP Milestone 0 is decided: Option B, Plotly-native** (pure Python,
 `go.Bar` + `go.Scatter` composed via subplots, to be packaged as a Dash
 All-in-One component in M2). The decision record and the full option analysis
-live in ROADMAP.md. Option C (custom MIT React component) remains the
-documented fallback if Plotly's interaction ceiling is ever reached; UpSet.js
-stays off the table (AGPLv3).
+live in ROADMAP.md. Option C (a React renderer behind the same Python API)
+remains the documented fallback if Plotly's interaction ceiling is ever
+reached; the candidate engine for it is the **BSD-3 `@visdesignlab/upset2-react`**
+(UpSet 2.0, by the technique's authors; see the ROADMAP M0 addendum), while
+UpSet.js stays off the table (AGPLv3).
 
 **M1 (data model + static figure) is implemented and tested:**
 
@@ -86,9 +88,10 @@ pattern-matching callbacks, click-to-select via the bar traces' `meta` /
 - Sibling and template project: `../dash-seqviz` (a Dash component wrapping the
   MIT `seqviz` npm library; it uses mamba and `setup.py`, whereas dash-upset
   uses pixi and `pyproject.toml`).
-- Prior art: `upsetplot` (BSD, matplotlib) for the data-input conventions, and
-  UpSet.js (AGPL) as the interactive reference implementation we are explicitly
-  NOT wrapping.
+- Prior art: `upsetplot` (BSD, matplotlib) for the data-input conventions;
+  UpSet 2.0 (`visdesignlab/upset2`, BSD-3) as the license-clean React engine
+  candidate if Option C is ever triggered (ROADMAP M0 addendum); and UpSet.js
+  (AGPL) as the implementation we are explicitly NOT wrapping.
 - GitHub remote: `https://github.com/PhylaTech/dash-upset` (created private;
   flip visibility when ready to publish). The local repo lives at
   `/Users/evan/fsa/dash-upset` on branch `main`.

@@ -25,14 +25,17 @@ callback-friendly component.
 
 ## Why this exists
 
-There is no first-class UpSet component for Dash. The most capable JavaScript
-implementation, [UpSet.js](https://upset.js.org), is licensed **AGPLv3** (a
-commercial license is required otherwise), which makes it unsuitable to wrap in
-a permissively licensed, publicly published library. `dash-upset` therefore
-builds the UpSet renderer on a clean, MIT-compatible foundation: the figure is
-composed from Plotly primitives in pure Python, so it works in notebooks and
-scripts as well as Dash, with no JavaScript build step. See the
-[roadmap](./ROADMAP.md) for the full analysis and the decision record.
+There is no first-class UpSet component for Dash, and wrapping the existing
+JavaScript implementations has real costs: [UpSet.js](https://upset.js.org) is
+**AGPLv3** (unsuitable for a permissively licensed library), and while
+[UpSet 2.0](https://github.com/visdesignlab/upset2) is BSD-3-Clause, embedding
+its React stack would drag a JavaScript build toolchain and a heavy dependency
+tree into every app, and would give up notebook rendering and static export.
+`dash-upset` therefore composes the figure from Plotly primitives in pure
+Python: MIT-clean, notebook-friendly, no JavaScript build step, with
+`upset2-react` documented as the fallback engine if Plotly's interaction
+ceiling is ever reached. See the [roadmap](./ROADMAP.md) for the full analysis
+and the decision record.
 
 ## Installation
 
@@ -118,8 +121,12 @@ releases.
 
 - [UpSet](https://upset.app) and the original research by Lex, Gehlenborg,
   et al. define the technique.
-- [UpSet.js](https://upset.js.org) by Samuel Gratzl is the reference
-  interactive JS implementation (AGPLv3 / commercial).
+- [UpSet 2.0](https://github.com/visdesignlab/upset2) by the Visualization
+  Design Lab (BSD-3-Clause) is the technique authors' interactive
+  reimplementation and the documented candidate engine should this library
+  ever add a JavaScript renderer (see the roadmap).
+- [UpSet.js](https://upset.js.org) by Samuel Gratzl is an interactive JS
+  implementation (AGPLv3 / commercial).
 - [`upsetplot`](https://upsetplot.readthedocs.io) by Joel Nothman (BSD-3-Clause)
   is the established matplotlib-based Python package; `dash-upset` mirrors its
   familiar data-input conventions.
