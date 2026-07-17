@@ -7,8 +7,8 @@
     var REPO = "https://github.com/PhylaTech/dash-upset";
     var LINKS = [
         { id: "home", label: "Home", href: "./" },
-        { id: "demo", label: "Demo", href: "./#demo" },
-        { id: "quickstart", label: "Quick start", href: "./#quickstart" },
+        { id: "examples", label: "Examples", href: "./examples.html" },
+        { id: "explorer", label: "Component Explorer", href: "./explorer.html" },
         { id: "docs", label: "Docs", href: REPO + "#readme", external: true },
     ];
 

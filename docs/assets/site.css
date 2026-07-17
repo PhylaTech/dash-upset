@@ -241,3 +241,100 @@ footer a:hover { text-decoration: underline; }
     .hero { padding: 40px 16px 32px; }
     section { padding: 40px 0; }
 }
+
+/* ---- Examples gallery (examples.html) ---- */
+.gallery-filter {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; align-items: center;
+}
+.gallery-filter .filter-group {
+    display: flex; gap: 4px; background: var(--color-surface);
+    border: 1px solid var(--color-border); border-radius: var(--radius); padding: 4px;
+}
+.gallery-filter button {
+    border: none; background: transparent; color: var(--color-text-muted);
+    padding: 6px 14px; border-radius: 4px; font-size: 0.88rem; font-weight: 500; cursor: pointer;
+}
+.gallery-filter button.active { background: var(--color-primary); color: #fff; }
+.gallery-filter .filter-search {
+    flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid var(--color-border);
+    border-radius: var(--radius); font-size: 0.9rem; background: #fff;
+}
+
+.gallery-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;
+}
+.gallery-card {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column;
+    gap: 10px; text-decoration: none; color: inherit;
+    transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+}
+.gallery-card:hover {
+    transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+    border-color: var(--color-primary);
+}
+.gallery-card .card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.badge {
+    display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 2px 8px;
+    border-radius: 999px; letter-spacing: 0.03em; text-transform: uppercase;
+}
+.badge-academic   { background: #eff6ff; color: #1d4ed8; }
+.badge-industrial { background: #fef3c7; color: #92400e; }
+.badge-tag        { background: var(--color-bg); color: var(--color-text-muted); }
+.badge-complexity { background: #f0fdf4; color: #166534; font-variant-numeric: tabular-nums; }
+.gallery-card h3 {
+    font-size: 1.05rem; font-weight: 700; color: var(--color-text); margin: 0;
+    text-transform: none; letter-spacing: -0.01em;
+}
+.gallery-card p { font-size: 0.88rem; color: var(--color-text-muted); margin: 0; flex: 1; }
+.gallery-card .card-meta {
+    font-size: 0.78rem; color: var(--color-text-muted);
+    font-family: "SFMono-Regular", Consolas, monospace;
+}
+.gallery-empty {
+    text-align: center; padding: 48px 24px; color: var(--color-text-muted);
+    border: 1px dashed var(--color-border); border-radius: var(--radius);
+}
+
+/* ---- Example detail (example.html) ---- */
+.example-header { background: transparent; border-bottom: none; padding: 48px 0 16px; }
+.example-header > .container { max-width: 780px; }
+.example-header .eyebrow {
+    font-size: 0.7rem; color: var(--color-text-muted); text-transform: uppercase;
+    letter-spacing: 0.12em; font-weight: 600;
+}
+.example-header h1 {
+    font-size: 2.2rem; line-height: 1.15; margin: 10px 0 12px; letter-spacing: -0.01em; font-weight: 700;
+}
+.example-header .subtitle {
+    color: var(--color-text); font-size: 1.1rem; line-height: 1.5; margin: 0 0 12px; max-width: 640px;
+}
+.example-header .meta-row {
+    font-size: 0.82rem; color: var(--color-text-muted); letter-spacing: 0.02em;
+    font-family: "SFMono-Regular", Consolas, monospace;
+}
+.example-body { display: flex; flex-direction: column; gap: 32px; }
+.ex-section { display: flex; flex-direction: column; gap: 12px; }
+.ex-section h3 { margin: 0; }
+.example-viewer-wrap {
+    border: 1px solid var(--color-border); border-radius: var(--radius);
+    background: #fff; overflow: hidden;
+}
+.section-label-subtle {
+    font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
+    color: var(--color-text-muted); border-top: 1px solid var(--color-border);
+    padding-top: 18px; margin: 0;
+}
+.next-examples {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;
+}
+.next-examples a {
+    display: block; padding: 12px 16px; background: var(--color-surface);
+    border: 1px solid var(--color-border); border-radius: var(--radius);
+    text-decoration: none; color: inherit; font-size: 0.9rem;
+}
+.next-examples a:hover { border-color: var(--color-primary); }
+.next-examples .next-eyebrow {
+    font-size: 0.7rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.06em;
+}
+.next-examples .next-title { display: block; margin-top: 4px; font-weight: 600; color: var(--color-text); }
