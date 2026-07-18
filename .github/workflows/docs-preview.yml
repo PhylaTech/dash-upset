@@ -1,0 +1,85 @@
+name: Docs preview
+
+# Deploy the static docs/ site to a Cloudflare Pages preview for every pull
+# request and post the URL as a sticky comment. Production docs stay on GitHub
+# Pages (served from main /docs); this only adds per-PR preview URLs.
+#
+# One-time setup (see CONTRIBUTING.md "Docs previews"): create a Cloudflare
+# Pages project named "dash-upset-docs" and add two repository secrets,
+# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID. Until those secrets exist the
+# job skips cleanly, so this workflow never fails a PR before it is configured.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: docs-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    # Fork PRs receive a read-only token with no access to secrets, so only run
+    # for branches that live in this repository.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Check Cloudflare credentials
+        id: check
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$CF_TOKEN" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Cloudflare secrets not set; skipping docs preview. See CONTRIBUTING.md."
+          fi
+
+      - name: Checkout
+        if: steps.check.outputs.configured == 'true'
+        uses: actions/checkout@v4
+
+      - name: Deploy preview to Cloudflare Pages
+        if: steps.check.outputs.configured == 'true'
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # The static site is served directly from docs/ (no build step).
+          command: >-
+            pages deploy docs
+            --project-name=dash-upset-docs
+            --branch=pr-${{ github.event.pull_request.number }}
+            --commit-dirty=true
+
+      - name: Comment preview URL
+        if: steps.check.outputs.configured == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          ALIAS_URL: ${{ steps.deploy.outputs.pages-deployment-alias-url }}
+          DEPLOY_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          url="${ALIAS_URL:-$DEPLOY_URL}"
+          marker="<!-- docs-preview -->"
+          body="${marker}
+          📄 **Docs preview** for this PR: ${url}
+
+          Deployed from \`docs/\` at commit \`${SHA}\` on Cloudflare Pages.
+          Production docs stay on GitHub Pages (https://phylatech.github.io/dash-upset/)."
+          existing=$(gh api "repos/${REPO}/issues/${PR}/comments" \
+            --jq "[.[] | select(.body | startswith(\"${marker}\"))][0].id // empty")
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/${REPO}/issues/comments/${existing}" -f body="${body}" >/dev/null
+          else
+            gh api -X POST "repos/${REPO}/issues/${PR}/comments" -f body="${body}" >/dev/null
+          fi
+          echo "Docs preview: ${url}"
