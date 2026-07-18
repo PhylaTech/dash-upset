@@ -85,6 +85,24 @@ def test_show_counts_toggle(sample):
     assert bare.texttemplate is None
 
 
+def test_show_percentages(sample):
+    pct_only = trace(
+        create_upset(sample, show_counts=False, show_percentages=True),
+        "upset:intersection-bars",
+    )
+    assert pct_only.texttemplate == "%{customdata[2]}%"
+    both = trace(
+        create_upset(sample, show_counts=True, show_percentages=True),
+        "upset:intersection-bars",
+    )
+    assert "%{y:,}" in both.texttemplate and "customdata[2]" in both.texttemplate
+    neither = trace(
+        create_upset(sample, show_counts=False, show_percentages=False),
+        "upset:intersection-bars",
+    )
+    assert neither.texttemplate is None
+
+
 def test_layout_passthrough(sample):
     fig = create_upset(sample, title="Movies", width=700, height=600)
     assert fig.layout.title.text == "Movies"

@@ -65,6 +65,7 @@ def create_upset(
     max_subsets: int | None = None,
     show_empty: bool = False,
     show_counts: bool = True,
+    show_percentages: bool = False,
     color: str = _INK,
     inactive_color: str = _INACTIVE,
     title: str | None = None,
@@ -95,6 +96,9 @@ def create_upset(
             cutoff are all kept).
         show_empty: Include the degree-0 intersection (elements in no set).
         show_counts: Label each intersection bar with its size.
+        show_percentages: Label each intersection bar with its percentage of
+            the total. Combined with ``show_counts`` the label reads
+            ``"N (X%)"``; alone it reads ``"X%"``.
         color: Color of the data marks (bars, active dots, connectors).
         inactive_color: Color of the non-member matrix dots.
         title: Optional figure title.
@@ -171,6 +175,14 @@ def create_upset(
 
     labels = [_label(entry) for entry in intersections]
     sizes = [entry.size for entry in intersections]
+    if show_counts and show_percentages:
+        bar_text = "%{y:,} (%{customdata[2]}%)"
+    elif show_counts:
+        bar_text = "%{y:,}"
+    elif show_percentages:
+        bar_text = "%{customdata[2]}%"
+    else:
+        bar_text = None
     fig.add_trace(
         go.Bar(
             x=list(range(n_intersections)),
@@ -192,7 +204,7 @@ def create_upset(
                 "Degree: %{customdata[1]}<br>"
                 "Deviation: %{customdata[3]}%<extra></extra>"
             ),
-            texttemplate="%{y:,}" if show_counts else None,
+            texttemplate=bar_text,
             textposition="outside",
             textfont={"size": 11, "color": _SECONDARY_INK},
             cliponaxis=False,
@@ -301,7 +313,7 @@ def create_upset(
         )
 
     max_size = max(sizes)
-    headroom = 1.18 if show_counts else 1.05
+    headroom = 1.18 if (show_counts or show_percentages) else 1.05
     intersection_range = [0, max_size * headroom if max_size > 0 else 1]
     column_range = [-0.5, n_intersections - 0.5]
     row_range = [n_sets - 0.5, -0.5]
