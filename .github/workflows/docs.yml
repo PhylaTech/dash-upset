@@ -1,0 +1,31 @@
+name: Docs
+
+# Publish the static docs/ site to the gh-pages branch (GitHub Pages serves
+# gh-pages). Per-PR previews live under pr-preview/ on the same branch (see
+# docs-preview.yml); clean-exclude keeps them intact when production redeploys.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Serialize all writes to gh-pages so production and PR-preview deploys never
+# race on the branch.
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy docs/ to gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: docs
+          branch: gh-pages
+          clean-exclude: pr-preview/

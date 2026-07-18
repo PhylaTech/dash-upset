@@ -16,51 +16,34 @@ resolves to your working tree.
 
 ## Docs site and previews
 
-The documentation site is a static site in `docs/`, served in production by
-**GitHub Pages** from `main` at https://phylatech.github.io/dash-upset/. The
-example datasets and demo figures are generated from Python (the source of
-truth) and committed; regenerate them after changing the figure factory:
+The documentation site is a static site in `docs/`, published by **GitHub
+Pages** from the `gh-pages` branch at https://phylatech.github.io/dash-upset/.
+Production deploys automatically: `.github/workflows/docs.yml` copies `docs/` to
+the root of `gh-pages` on every push to `main`. The example datasets and demo
+figures are generated from Python (the source of truth) and committed;
+regenerate them after changing the figure factory:
 
 ```bash
 pixi run python scripts/build_docs_data.py   # docs/data/examples.js
 pixi run python scripts/build_docs_demo.py   # docs/assets/demo.js
 ```
 
-### Per-PR previews on Cloudflare Pages
+### Per-PR previews (GitHub Pages)
 
-`.github/workflows/docs-preview.yml` deploys each PR's `docs/` to a
-[Cloudflare Pages](https://developers.cloudflare.com/pages/) preview and posts
-the URL as a comment, so reviewers can see the rendered docs before merging.
-Production stays on GitHub Pages; Cloudflare only serves previews.
+`.github/workflows/docs-preview.yml` deploys each PR's `docs/` to the
+`gh-pages` branch under `pr-preview/pr-<number>/` using
+[pr-preview-action](https://github.com/rossjrw/pr-preview-action) and comments
+the URL on the PR, so reviewers see the rendered docs before merging. The
+preview is removed when the PR closes. **No external accounts or secrets** are
+required; it reuses GitHub Pages, and production redeploys preserve the
+`pr-preview/` directory (`clean-exclude`). Previews are live at:
 
-The workflow **skips cleanly until the Cloudflare secrets are set**, so it never
-fails a PR before configuration. To enable it (one-time, needs a Cloudflare
-account):
+```
+https://phylatech.github.io/dash-upset/pr-preview/pr-<number>/
+```
 
-1. **Create the Pages project** (direct-upload type), named `dash-upset-docs`:
-
-   ```bash
-   npx wrangler pages project create dash-upset-docs --production-branch main
-   ```
-
-   or in the dashboard: **Workers & Pages → Create → Pages → Upload assets**.
-
-2. **Create an API token** at
-   <https://dash.cloudflare.com/profile/api-tokens> with the
-   **Account → Cloudflare Pages → Edit** permission (scoped to the account that
-   owns the project). Copy the account ID from **Workers & Pages** in the
-   dashboard.
-
-3. **Add both as repository secrets** (Settings → Secrets and variables →
-   Actions), or with the GitHub CLI:
-
-   ```bash
-   gh secret set CLOUDFLARE_API_TOKEN --repo PhylaTech/dash-upset
-   gh secret set CLOUDFLARE_ACCOUNT_ID --repo PhylaTech/dash-upset
-   ```
-
-Once the secrets exist, the next PR push deploys a preview at
-`https://pr-<number>.dash-upset-docs.pages.dev` and comments the link.
+Previews only run for branches in this repository (fork PRs get a read-only
+token that cannot push to `gh-pages`).
 
 ## Commit messages: Conventional Commits
 
