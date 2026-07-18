@@ -9,7 +9,7 @@
         { id: "home", label: "Home", href: "./" },
         { id: "examples", label: "Examples", href: "./examples.html" },
         { id: "explorer", label: "Component Explorer", href: "./explorer.html" },
-        { id: "docs", label: "Docs", href: REPO + "#readme", external: true },
+        { id: "docs", label: "Docs", href: "./docs.html" },
     ];
 
     function renderNav() {
