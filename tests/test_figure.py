@@ -196,3 +196,34 @@ def test_custom_colors(sample):
     fig = create_upset(sample, color="#123456", inactive_color="#abcdef")
     assert trace(fig, "upset:intersection-bars").marker.color == "#123456"
     assert trace(fig, "upset:matrix-background").marker.color == "#abcdef"
+
+
+def test_theme_light_default(sample):
+    assert create_upset(sample).layout.paper_bgcolor == "#ffffff"
+
+
+def test_theme_dark_recolors(sample):
+    dark = create_upset(sample, theme="dark")
+    assert dark.layout.paper_bgcolor == "#1a1a19"
+    assert trace(dark, "upset:intersection-bars").marker.color == "#e8e6e1"
+
+
+def test_theme_auto_resolves_light(sample):
+    assert create_upset(sample, theme="auto").layout.paper_bgcolor == "#ffffff"
+
+
+def test_theme_palette_sets_colorway(sample):
+    fig = create_upset(sample, theme="okabe-ito-dark")
+    assert fig.layout.paper_bgcolor == "#1a1a19"
+    assert list(fig.layout.colorway)[0] == "#E69F00"
+
+
+def test_color_overrides_theme(sample):
+    fig = create_upset(sample, theme="dark", color="#abc123", inactive_color="#def456")
+    assert trace(fig, "upset:intersection-bars").marker.color == "#abc123"
+    assert trace(fig, "upset:matrix-background").marker.color == "#def456"
+
+
+def test_invalid_theme_rejected(sample):
+    with pytest.raises(ValueError, match="theme must be one of"):
+        create_upset(sample, theme="solarized")
