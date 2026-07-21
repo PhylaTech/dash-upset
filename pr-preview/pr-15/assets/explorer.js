@@ -43,6 +43,7 @@
         setTicks: document.getElementById("ctrl-setticks"),
         highlight: document.getElementById("ctrl-highlight"),
         selColor: document.getElementById("ctrl-selcolor"),
+        description: document.getElementById("ctrl-desc"),
         snippet: document.querySelector("#live-snippet code"),
         roIntersection: document.getElementById("ro-intersection"),
         roSets: document.getElementById("ro-sets"),
@@ -91,6 +92,7 @@
             // its override checkbox is ticked (else the theme default stands).
             inactiveColor: el.inactiveOn.checked ? el.inactive.value : null,
             title: str(el.title),
+            description: str(el.description),
             // Axis titles: unchecked -> hide (null); checked + blank -> auto
             // (undefined); checked + text -> override.
             intersectionTitle: !el.showIntTitle.checked ? null : (str(el.intTitle) || undefined),
@@ -126,6 +128,7 @@
         if (opts.color) args.push('color="' + opts.color + '"');
         if (opts.inactiveColor) args.push('inactive_color="' + opts.inactiveColor + '"');
         if (opts.title) args.push('title="' + opts.title + '"');
+        if (opts.description) args.push('description="' + opts.description.replace(/"/g, '\\"') + '"');
         if (opts.intersectionTitle === null) args.push("intersection_title=None");
         else if (opts.intersectionTitle) args.push('intersection_title="' + opts.intersectionTitle + '"');
         if (opts.setSizeTitle === null) args.push("set_size_title=None");
@@ -192,6 +195,10 @@
             window.Plotly.react(root, fig.data, fig.layout, fig.config);
             // Autosized figure: fit it to the (viewport-locked) canvas.
             window.Plotly.Plots.resize(root);
+            // Accessibility: expose the figure's description as the graph's
+            // aria-label, exactly as the compiled component does.
+            var desc = fig.layout && fig.layout.meta && fig.layout.meta.description;
+            if (desc) { root.setAttribute("role", "img"); root.setAttribute("aria-label", desc); }
             // Snapshot the base colors so click-highlight paints over them.
             baseColors = window.DashUpset.baseColorsOf(fig);
             // Rebind after every (re)render: Plotly.purge on the no-subsets
@@ -225,7 +232,7 @@
 
     Object.keys(el).forEach(function (k) {
         var node = el[k];
-        if (node && (node.tagName === "SELECT" || node.tagName === "INPUT")) {
+        if (node && (node.tagName === "SELECT" || node.tagName === "INPUT" || node.tagName === "TEXTAREA")) {
             var evt = node.type === "checkbox" || node.tagName === "SELECT" ? "change" : "input";
             node.addEventListener(evt, render);
         }
