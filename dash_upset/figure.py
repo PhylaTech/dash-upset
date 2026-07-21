@@ -23,6 +23,7 @@ from .data import (
     UpSetIntersection,
     deviations,
     filter_subsets,
+    from_indicators,
     sort_intersections,
     sort_sets,
     subset_sizes,
@@ -115,8 +116,9 @@ def _resolve_theme(theme: str) -> dict:
 
 
 def create_upset(
-    data: UpSetData,
+    data,
     *,
+    sets: list[str] | None = None,
     mode: str = "distinct",
     sort_by: str = "cardinality",
     sort_sets_by: str = "cardinality",
@@ -139,8 +141,14 @@ def create_upset(
     """Create an UpSet plot as a standalone Plotly figure.
 
     Args:
-        data: The canonical model, built with one of the ``from_*``
-            constructors in :mod:`dash_upset.data`.
+        data: Either a dataframe / mapping of boolean indicator columns
+            (pandas, Polars, PyArrow, ... via narwhals) -- the Plotly-style
+            entry point -- or an :class:`~dash_upset.data.UpSetData` model built
+            with a ``from_*`` constructor. A dataframe is passed through
+            :func:`~dash_upset.data.from_indicators`.
+        sets: When ``data`` is a dataframe, the columns to treat as sets (in
+            order); other columns are ignored. Unused when ``data`` is already
+            an ``UpSetData``.
         mode: How subset sizes are counted: ``"distinct"`` (default, exclusive
             intersections that partition the data), ``"intersect"`` (inclusive:
             elements in all member sets), or ``"union"`` (elements in at least
@@ -185,11 +193,7 @@ def create_upset(
         ``dcc.Graph(figure=fig)``, or static export.
     """
     if not isinstance(data, UpSetData):
-        raise TypeError(
-            "create_upset expects an UpSetData model; build one with "
-            "from_memberships, from_contents, from_indicators, or from_counts "
-            f"(got {type(data).__name__})"
-        )
+        data = from_indicators(data, sets=sets)
     if not data.set_names:
         raise ValueError("the data model has no sets to plot")
     if not data.intersections:
