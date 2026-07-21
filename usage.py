@@ -28,6 +28,8 @@ app.layout = html.Div(
             data=df,
             sets=["ResNet", "ViT", "XGBoost"],
             title="Model error sets",
+            highlight_selection=True,
+            selection_color="#d55e00",
         ),
         html.Pre(id="out-intersection", children="intersection: (click a bar or dot)"),
         html.Pre(id="out-sets", children="sets: (click a set-size bar)"),

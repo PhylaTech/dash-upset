@@ -30,7 +30,9 @@ which builds the figure for you.
 
 The clicked trace is identified by its stable meta id:
 "upset:intersection-bars" and "upset:matrix-dots" update selected_intersection;
-"upset:set-bars" updates selected_sets. Clicks elsewhere are ignored.
+"upset:set-bars" updates selected_sets. Clicks elsewhere are ignored. When
+highlight_selection is on, the clicked column (bar + its member dots) or set
+(bar + its dots) is recolored to selection_color.
 
 Keyword arguments:
 
@@ -49,6 +51,13 @@ Keyword arguments:
     dash_upset.create_upset (a dict with \"data\" and \"layout\").
     UpSet(...) sets this for you.
 
+- highlight_selection (boolean; default True):
+    When True (default), clicking recolors the selected marks (the
+    clicked intersection's bar and member dots, or the clicked set's
+    bar and dots) to selection_color, as a visible selection cue. Set
+    False to leave the plot unchanged on click (selection is still
+    reported to callbacks).
+
 - selected_intersection (dict; optional):
     The currently selected intersection, set when an intersection-size
     bar or a matrix dot is clicked. An object {label, sets, size}
@@ -57,7 +66,11 @@ Keyword arguments:
 
 - selected_sets (list; optional):
     The currently selected set(s), set when a set-size bar is clicked:
-    a list of set names. Read-only from callbacks."""
+    a list of set names. Read-only from callbacks.
+
+- selection_color (string; default '#9c5a3c'):
+    The color applied to the selected marks when highlight_selection
+    is on. Any CSS color string."""
     _children_props: typing.List[str] = []
     _base_nodes = ['children']
     _namespace = 'dash_upset_component'
@@ -71,13 +84,15 @@ Keyword arguments:
         config: typing.Optional[dict] = None,
         selected_intersection: typing.Optional[dict] = None,
         selected_sets: typing.Optional[typing.Sequence] = None,
+        highlight_selection: typing.Optional[bool] = None,
+        selection_color: typing.Optional[str] = None,
         style: typing.Optional[typing.Any] = None,
         className: typing.Optional[str] = None,
         **kwargs
     ):
-        self._prop_names = ['id', 'className', 'config', 'figure', 'selected_intersection', 'selected_sets', 'style']
+        self._prop_names = ['id', 'className', 'config', 'figure', 'highlight_selection', 'selected_intersection', 'selected_sets', 'selection_color', 'style']
         self._valid_wildcard_attributes =            []
-        self.available_properties = ['id', 'className', 'config', 'figure', 'selected_intersection', 'selected_sets', 'style']
+        self.available_properties = ['id', 'className', 'config', 'figure', 'highlight_selection', 'selected_intersection', 'selected_sets', 'selection_color', 'style']
         self.available_wildcard_properties =            []
         _explicit_args = kwargs.pop('_explicit_args')
         _locals = locals()

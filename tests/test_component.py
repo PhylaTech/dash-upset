@@ -58,6 +58,27 @@ def test_invalid_figure_kwargs_rejected():
         UpSet(data=pd.DataFrame({"A": [1, 0]}), nonsense=True)
 
 
+def test_highlight_props_declared_and_forwarded():
+    comp = UpSet(
+        data=pd.DataFrame({"A": [1, 0], "B": [1, 1]}),
+        highlight_selection=False,
+        selection_color="#ff0000",
+    )
+    assert "highlight_selection" in comp._prop_names
+    assert "selection_color" in comp._prop_names
+    assert comp.highlight_selection is False
+    assert comp.selection_color == "#ff0000"
+
+
+def test_axis_kwargs_reach_create_upset():
+    comp = UpSet(
+        data=pd.DataFrame({"A": [1, 0], "B": [1, 1]}),
+        set_size_title=None,
+        intersection_title="Errors",
+    )
+    assert any(ax.title.text == "Errors" for ax in comp.figure.select_yaxes())
+
+
 def test_js_dist_points_at_committed_bundle():
     # Dash serves the compiled bundle from the inner package; the entries must
     # match files that actually ship (guards against a stale/renamed build).

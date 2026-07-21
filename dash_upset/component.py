@@ -54,8 +54,14 @@ class UpSet(DashUpset):
             responsive graph with no mode bar).
         style: CSS styles for the container div.
         className: CSS class for the container div.
+        highlight_selection: When ``True`` (default), clicking recolors the
+            selected marks (the clicked intersection's bar and member dots, or
+            the clicked set's bar and dots) to ``selection_color``. ``False``
+            leaves the plot unchanged on click; selection is still reported.
+        selection_color: Color applied to the selected marks when
+            ``highlight_selection`` is on (any CSS color).
         **kwargs: Forwarded to ``create_upset`` (``mode``, ``sort_by``,
-            ``theme``, filtering, ...).
+            ``theme``, filtering, axis titles, ...).
     """
 
     def __init__(
@@ -66,6 +72,8 @@ class UpSet(DashUpset):
         config=None,
         style=None,
         className=None,
+        highlight_selection=None,
+        selection_color=None,
         **kwargs,
     ):
         figure = create_upset(data, sets=sets, **kwargs)
@@ -80,4 +88,8 @@ class UpSet(DashUpset):
             component_kwargs["style"] = style
         if className is not None:
             component_kwargs["className"] = className
+        if highlight_selection is not None:
+            component_kwargs["highlight_selection"] = highlight_selection
+        if selection_color is not None:
+            component_kwargs["selection_color"] = selection_color
         super().__init__(**component_kwargs)

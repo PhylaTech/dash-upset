@@ -80,6 +80,10 @@ THEMES = (
     "tol-dark",
 )
 
+# Sentinel for "use the automatic axis title"; None means "hide the title",
+# which we cannot express with None as the default.
+_AUTO = object()
+
 _ROW_PX = 28
 _BAR_PANEL_PX = 300
 
@@ -134,6 +138,10 @@ def create_upset(
     color: str | None = None,
     inactive_color: str | None = None,
     title: str | None = None,
+    intersection_title: str | None = _AUTO,
+    set_size_title: str | None = _AUTO,
+    show_intersection_ticks: bool = True,
+    show_set_size_ticks: bool = True,
     width: int | None = None,
     height: int | None = None,
     template: str | None = "plotly_white",
@@ -183,6 +191,14 @@ def create_upset(
         inactive_color: Color of the non-member matrix dots. Defaults to the
             theme's inactive tone; an explicit value overrides the theme.
         title: Optional figure title.
+        intersection_title: Title of the intersection-size axis. Omit for the
+            automatic label (``"Intersection size"``, or the mode-specific
+            variant); pass a string to override it, or ``None`` to hide it.
+        set_size_title: Title of the set-size axis. Omit for ``"Set size"``;
+            pass a string to override, or ``None`` to hide it.
+        show_intersection_ticks: Show the numeric tick labels on the
+            intersection-size axis.
+        show_set_size_ticks: Show the numeric tick labels on the set-size axis.
         width: Figure width in pixels; ``None`` means responsive.
         height: Figure height in pixels; ``None`` computes one from the
             number of sets.
@@ -230,6 +246,15 @@ def create_upset(
     th = _resolve_theme(theme)
     ink = color if color is not None else th["ink"]
     inactive = inactive_color if inactive_color is not None else th["inactive"]
+
+    # Per-set colors. A palette theme (colorway) colors each set -- its size
+    # bar and its member dots -- so the CVD palettes are visibly different from
+    # plain light/dark (where every mark is ink). An explicit ``color`` wins.
+    colorway = th["colorway"]
+    if color is None and colorway:
+        set_colors = [colorway[index % len(colorway)] for index in range(n_sets)]
+    else:
+        set_colors = [ink] * n_sets
 
     matrix_px = _ROW_PX * n_sets
     matrix_fraction = min(0.8, max(0.12, matrix_px / (matrix_px + _BAR_PANEL_PX)))
@@ -302,7 +327,7 @@ def create_upset(
             y=list(range(n_sets)),
             orientation="h",
             width=0.6,
-            marker={"color": ink, "cornerradius": 4, "line": {"width": 0}},
+            marker={"color": set_colors, "cornerradius": 4, "line": {"width": 0}},
             customdata=[[name, _percent(size_of_set[name], total)] for name in set_order],
             hovertemplate=(
                 "<b>%{customdata[0]}</b><br>"
@@ -354,11 +379,13 @@ def create_upset(
 
     dot_x: list[int] = []
     dot_y: list[int] = []
+    dot_colors: list[str] = []
     dot_customdata: list[list[str]] = []
     for column, (label, entry) in enumerate(zip(labels, intersections, strict=True)):
         for name in entry.sets:
             dot_x.append(column)
             dot_y.append(row_of_set[name])
+            dot_colors.append(set_colors[row_of_set[name]])
             dot_customdata.append([name, f"{label} ({entry.size:,})"])
     if dot_x:
         fig.add_trace(
@@ -366,7 +393,7 @@ def create_upset(
                 x=dot_x,
                 y=dot_y,
                 mode="markers",
-                marker={"color": ink, "size": dot_px},
+                marker={"color": dot_colors, "size": dot_px},
                 customdata=dot_customdata,
                 hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]}<extra></extra>",
                 name="Members",
@@ -400,11 +427,14 @@ def create_upset(
     row_range = [n_sets - 0.5, -0.5]
     tick_font = {"size": 11, "color": th["muted"]}
     title_font = {"size": 12, "color": th["secondary"]}
-    intersection_title = {
-        "distinct": "Intersection size",
-        "intersect": "Intersection size (intersect)",
-        "union": "Union size",
-    }[mode]
+    if intersection_title is _AUTO:
+        intersection_title = {
+            "distinct": "Intersection size",
+            "intersect": "Intersection size (intersect)",
+            "union": "Union size",
+        }[mode]
+    if set_size_title is _AUTO:
+        set_size_title = "Set size"
 
     fig.update_xaxes(
         row=1,
@@ -422,6 +452,7 @@ def create_upset(
         title_text=intersection_title,
         title_font=title_font,
         title_standoff=8,
+        showticklabels=show_intersection_ticks,
         tickfont=tick_font,
         gridcolor=th["grid"],
         gridwidth=1,
@@ -435,9 +466,10 @@ def create_upset(
         row=2,
         col=1,
         autorange="reversed",
-        title_text="Set size",
+        title_text=set_size_title,
         title_font=title_font,
         title_standoff=8,
+        showticklabels=show_set_size_ticks,
         tickfont=tick_font,
         gridcolor=th["grid"],
         gridwidth=1,
