@@ -1,8 +1,9 @@
 /* dash-upset Component Explorer wiring.
  *
  * Reads the controls, rebuilds the plot via DashUpset.buildFigure (see
- * assets/upset.js), updates the readouts, and regenerates the matching
- * create_upset(...) Python snippet on every change.
+ * assets/upset.js), regenerates the matching UpSet(...) Python snippet, and
+ * -- on click -- surfaces the component's real callback properties
+ * (selected_intersection / selected_sets) via DashUpset.selectionFromClick.
  */
 (function () {
     "use strict";
@@ -27,11 +28,15 @@
         maxDegree: document.getElementById("ctrl-maxdegree"),
         maxSubsets: document.getElementById("ctrl-maxsubsets"),
         showCounts: document.getElementById("ctrl-showcounts"),
+        showPct: document.getElementById("ctrl-showpct"),
         showEmpty: document.getElementById("ctrl-showempty"),
+        theme: document.getElementById("ctrl-theme"),
+        color: document.getElementById("ctrl-color"),
+        inactive: document.getElementById("ctrl-inactive"),
+        title: document.getElementById("ctrl-title"),
         snippet: document.querySelector("#live-snippet code"),
-        rSets: document.getElementById("readout-sets"),
-        rSubsets: document.getElementById("readout-subsets"),
-        rTotal: document.getElementById("readout-total"),
+        roIntersection: document.getElementById("ro-intersection"),
+        roSets: document.getElementById("ro-sets"),
     };
 
     datasets.forEach(function (d, i) {
@@ -51,6 +56,10 @@
         var v = Number(input.value);
         return isNaN(v) ? null : v;
     }
+    function str(input) {
+        var v = (input.value || "").trim();
+        return v === "" ? null : v;
+    }
 
     function readOptions() {
         return {
@@ -63,15 +72,14 @@
             maxDegree: num(el.maxDegree),
             maxSubsets: num(el.maxSubsets),
             showCounts: el.showCounts.checked,
+            showPercentages: el.showPct.checked,
             showEmpty: el.showEmpty.checked,
+            theme: el.theme.value,
+            color: str(el.color),
+            inactiveColor: str(el.inactive),
+            title: str(el.title),
             height: 460,
         };
-    }
-
-    function pyValue(v) {
-        if (typeof v === "boolean") return v ? "True" : "False";
-        if (typeof v === "string") return '"' + v + '"';
-        return String(v);
     }
 
     function buildSnippet(dataset, opts) {
@@ -88,9 +96,13 @@
         if (opts.minDegree != null) args.push("min_degree=" + opts.minDegree);
         if (opts.maxDegree != null) args.push("max_degree=" + opts.maxDegree);
         if (opts.maxSubsets != null) args.push("max_subsets=" + opts.maxSubsets);
-        if (!opts.showCounts) args.push("show_counts=False");
         if (opts.showEmpty) args.push("show_empty=True");
-        args.push('title="' + dataset.title + '"');
+        if (!opts.showCounts) args.push("show_counts=False");
+        if (opts.showPercentages) args.push("show_percentages=True");
+        if (opts.theme !== "light") args.push('theme="' + opts.theme + '"');
+        if (opts.color) args.push('color="' + opts.color + '"');
+        if (opts.inactiveColor) args.push('inactive_color="' + opts.inactiveColor + '"');
+        if (opts.title) args.push('title="' + opts.title + '"');
 
         var argText = args.map(function (a) { return "    " + a + ","; }).join("\n");
         return (
@@ -109,24 +121,42 @@
         );
     }
 
+    function resetReadouts() {
+        el.roIntersection.textContent = "None";
+        el.roSets.textContent = "[]";
+    }
+
+    // Selection: mirror the compiled component. A click on a bar/dot updates
+    // the property readout, just as it would drive a Dash callback.
+    function onClick(data) {
+        var point = data && data.points && data.points[0];
+        var sel = window.DashUpset.selectionFromClick(point);
+        if (!sel) return;
+        if (sel.prop === "selected_intersection") {
+            el.roIntersection.textContent = JSON.stringify(sel.value);
+        } else if (sel.prop === "selected_sets") {
+            el.roSets.textContent = JSON.stringify(sel.value);
+        }
+    }
+
     function render() {
         var dataset = datasets[Number(el.dataset.value) || 0];
         var opts = readOptions();
         var fig = window.DashUpset.buildFigure(dataset.model, opts);
 
         if (!fig) {
-            Plotly.purge(root);
+            window.Plotly.purge(root);
             root.innerHTML =
                 '<p style="padding:24px;color:var(--color-text-muted);font-size:0.9rem;">' +
                 "No subsets match these filters. Loosen a filter to see the plot.</p>";
-            el.rSubsets.innerHTML = "subsets shown: <strong>0</strong>";
         } else {
-            Plotly.react(root, fig.data, fig.layout, fig.config);
-            var barTrace = fig.data[0];
-            el.rSubsets.innerHTML = "subsets shown: <strong>" + barTrace.y.length + "</strong>";
+            window.Plotly.react(root, fig.data, fig.layout, fig.config);
+            // Rebind after every (re)render: Plotly.purge on the no-subsets
+            // path drops handlers, so re-attach fresh and de-dupe.
+            if (root.removeAllListeners) root.removeAllListeners("plotly_click");
+            root.on("plotly_click", onClick);
         }
-        el.rSets.innerHTML = "sets: <strong>" + dataset.model.setNames.length + "</strong>";
-        el.rTotal.innerHTML = "total elements: <strong>" + dataset.model.total.toLocaleString() + "</strong>";
+        resetReadouts();
         el.snippet.textContent = buildSnippet(dataset, opts);
         if (window.DashUpsetSite && window.DashUpsetSite.wireCopy) {
             window.DashUpsetSite.wireCopy(document);
@@ -136,7 +166,8 @@
     Object.keys(el).forEach(function (k) {
         var node = el[k];
         if (node && (node.tagName === "SELECT" || node.tagName === "INPUT")) {
-            node.addEventListener(node.type === "checkbox" || node.tagName === "SELECT" ? "change" : "input", render);
+            var evt = node.type === "checkbox" || node.tagName === "SELECT" ? "change" : "input";
+            node.addEventListener(evt, render);
         }
     });
 
