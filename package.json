@@ -1,0 +1,44 @@
+{
+  "name": "dash_upset_component",
+  "version": "0.1.0",
+  "description": "Compiled React component backing dash-upset's interactive UpSet plots",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/PhylaTech/dash-upset.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PhylaTech/dash-upset/issues"
+  },
+  "homepage": "https://github.com/PhylaTech/dash-upset",
+  "main": "build/index.js",
+  "scripts": {
+    "build:js": "webpack --mode production",
+    "build:backends": "dash-generate-components ./src/lib/components dash_upset_component --ignore \\.test\\.",
+    "build": "npm run build:js && npm run build:backends"
+  },
+  "author": "Evan Rees <evanroyrees@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "plotly.js": "^3.0.1",
+    "react-plotly.js": "^2.6.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
+    "@babel/preset-react": "^7.23.3",
+    "babel-loader": "^9.1.3",
+    "css-loader": "^7.1.4",
+    "prop-types": "^15.8.1",
+    "react": "^18.2.0",
+    "react-docgen": "^5.4.3",
+    "react-dom": "^18.2.0",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.90.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}

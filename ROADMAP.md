@@ -189,6 +189,36 @@ reach. **If Plotly's interaction ceiling is hit (M5), evaluate wrapping
 worth borrowing ideas from for the M3 accessibility pass, independent of the
 engine question.
 
+### Addendum (2026-07-20): the component layer is a compiled React shim
+
+The `UpSet` component originally shipped as a pure-Python All-in-One (AIO)
+composite (`dcc.Graph` + `dcc.Store`s + a pattern-matching callback), whose
+selection outputs had to be addressed as
+`Input(UpSet.ids.selected_intersection("genes"), "data")`. That syntax is the
+official pattern for composite components, but it is not the convention Dash
+users expect from a real component (`Input("genes", "<property>")`), and a
+pure-Python composite cannot declare new top-level properties.
+
+**Decision: keep the figure Plotly-native (Option B unchanged), but back the
+`UpSet` component with a minimal compiled React component** (`src/lib/`,
+built into `dash_upset_component/`). The shim is ~150 lines: react-plotly.js
+renders the Python-built figure (a trimmed plotly.js bundle: core + bar +
+scatter), and a click handler maps the stable trace `meta` ids to two declared
+properties, `selected_intersection` and `selected_sets`. All UpSet logic
+(data model, modes, sorting, filtering, deviation, theming) stays in Python,
+shared with `create_upset`.
+
+Consequences:
+
+- Callbacks use the standard convention:
+  `Input("genes", "selected_intersection")`.
+- The npm/webpack/`dash-generate-components` toolchain now exists in the repo,
+  but **built artifacts are committed**, so installing, testing, packaging,
+  and publishing need no Node; Node is needed only to change `src/lib/`.
+- This is *not* the full Option C (no custom renderer was built; rendering is
+  plotly.js exactly as before). Wrapping `upset2-react` remains the documented
+  M5 fallback if Plotly's interaction ceiling is hit.
+
 ---
 
 ## Data model
@@ -257,24 +287,25 @@ Interaction model:
 For **Option C**, the same Python props map to a React component and selection
 flows back through `setProps`, exactly like `onSelection` in dash-seqviz.
 
-## Architecture (Option B)
+## Architecture (Option B + compiled component shim)
 
 ```
 dash_upset/
-  __init__.py          # exports: UpSet (AIO), create_upset (figure factory), from_* helpers
+  __init__.py          # exports: UpSet (component), create_upset (figure factory), from_* helpers
   data.py              # input parsing + canonical model (from_memberships/contents/indicators)
   figure.py            # create_upset(model, ...) -> go.Figure (matrix + bars via subplots)
-  component.py         # UpSet AIO: dcc.Graph + wiring + pattern-matching callbacks
-  theming.py           # Plotly template integration, colorways, light/dark
-tests/                 # unit (data, figure structure) + Dash integration (selenium)
-docs/                  # GitHub Pages site + live examples (added in M4)
-usage.py               # local demo app for manual testing (like dash-seqviz)
+  component.py         # UpSet: builds the figure, subclasses the compiled DashUpset
+dash_upset_component/  # compiled React shim (committed build artifacts + generated class)
+src/lib/               # the shim's source: DashUpset.react.js (react-plotly.js + click mapping)
+package.json           # npm build: webpack bundle + dash-generate-components
+tests/                 # unit (data, figure structure, component props)
+docs/                  # GitHub Pages site + live examples
 ```
 
-If **Option C** is chosen, add the dash-seqviz-style JS layer
-(`package.json`, `webpack.config.js`, `.babelrc`, `.eslintrc`, `src/lib/...`,
-`dash-generate-components`) and an npm publish job; the Python API stays the
-same.
+Theming lives in `figure.py` (`theme=` resolves palettes + light/dark); a
+separate `theming.py` was not needed. If the full **Option C** (custom
+renderer / upset2-react wrap) is ever chosen, it extends `src/lib/` and the
+Python API stays the same.
 
 ## Milestones
 
@@ -285,10 +316,12 @@ same.
   (`UpSetData`), and `create_upset(...) -> go.Figure` with matrix + both bar
   tracks, sorting, and hover tooltips. Ships as `0.1.0`. Deliverable met:
   renders a correct UpSet figure in a notebook (or any `dcc.Graph`).
-- **M2 -- Interactive AIO component.** `UpSet(...)` with hover, click-select,
-  and `selected_intersection` / `selected_sets` outputs (UpSet.js-style
-  stateless controlled-component contract); drill-into-members element table;
-  example callback cross-filtering a table. Ship as `0.2.0`.
+- **M2 -- Interactive component. DONE (2026-07-20):** `UpSet(...)` with
+  click-select exposed as declared component properties
+  (`Input(id, "selected_intersection")` / `Input(id, "selected_sets")`),
+  backed by the compiled React shim (see the 2026-07-20 addendum; originally
+  shipped as an AIO composite). Still open from the original M2 scope:
+  drill-into-members element table + a cross-filtering example.
 - **M3 -- Analysis semantics, filtering, theming, polish.** Intersection
   `mode=` (distinct/intersect/union); deviation column + sort-by-deviation;
   min/max size, min/max degree, top-N filtering; count/percentage labels;

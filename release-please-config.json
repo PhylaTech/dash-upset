@@ -9,7 +9,13 @@
       "bump-patch-for-minor-pre-major": true,
       "include-v-in-tag": true,
       "draft": false,
-      "prerelease": false
+      "prerelease": false,
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "dash_upset_component/__init__.py"
+        }
+      ]
     }
   }
 }

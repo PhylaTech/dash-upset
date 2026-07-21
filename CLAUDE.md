@@ -16,41 +16,50 @@ which is the template for the overall project shape. PhylaTech is the
 organization that the Full Spectrum Analytics (FSA) tools, including
 dash-seqviz, are being migrated to.
 
-## Current status (as of 2026-07-16): M1 implemented, engine decided
+## Current status (as of 2026-07-20): M1+M2+M4 shipped, M3 mostly done
 
-**ROADMAP Milestone 0 is decided: Option B, Plotly-native** (pure Python,
-`go.Bar` + `go.Scatter` composed via subplots, to be packaged as a Dash
-All-in-One component in M2). The decision record and the full option analysis
-live in ROADMAP.md. Option C (a React renderer behind the same Python API)
-remains the documented fallback if Plotly's interaction ceiling is ever
-reached; the candidate engine for it is the **BSD-3 `@visdesignlab/upset2-react`**
-(UpSet 2.0, by the technique's authors; see the ROADMAP M0 addendum), while
+**Engine: Option B, Plotly-native** (the figure is pure Python, `go.Bar` +
+`go.Scatter` composed via subplots), **plus a minimal compiled React shim for
+the component layer** (2026-07-20 ROADMAP addendum): react-plotly.js renders
+the Python-built figure and maps clicks onto two declared props, so callbacks
+use the standard `Input("genes", "selected_intersection")` convention instead
+of the earlier AIO `UpSet.ids.*` pattern-matching ids. Wrapping UpSet 2.0
+(`@visdesignlab/upset2-react`, BSD-3) stays the documented M5 fallback;
 UpSet.js stays off the table (AGPLv3).
 
-**M1 (data model + static figure) is implemented and tested:**
+**Implemented and tested:**
 
 - `dash_upset/data.py` -- the canonical `UpSetData` model plus
   `from_memberships` / `from_contents` / `from_indicators` (upsetplot-style
   conventions, reimplemented, no upsetplot dependency) and a `from_counts`
   convenience for pre-aggregated data. `from_indicators` is
-  dataframe-agnostic via **narwhals** (`narwhals.stable.v2`): pandas, Polars,
-  PyArrow, cuDF, and Modin all work, and the package depends on narwhals
-  rather than pandas (pandas + polars are dev-only test deps). Python floor
-  is 3.10 (narwhals 2 requires it; 3.9 is EOL).
-- `dash_upset/figure.py` -- `create_upset(...) -> go.Figure`: intersection-size
-  bars, set-size bars, dot matrix with connectors, sorting
-  (`sort_by`/`sort_sets_by`), `show_empty`/`show_counts`, hover tooltips with
-  percentages. Traces carry stable `meta` ids so the M2 component can address
-  them.
-- Behavioral tests in `tests/test_data.py` and `tests/test_figure.py`;
+  dataframe-agnostic via **narwhals** (`narwhals.stable.v2`); Python floor is
+  3.10. pandas + polars are dev-only test deps.
+- `dash_upset/figure.py` -- `create_upset(...) -> go.Figure`: bars + dot
+  matrix, `mode=` (distinct/intersect/union), sorting incl. deviation,
+  filtering (size/degree/top-N), `show_counts`/`show_percentages`,
+  `theme=` (light/dark/auto + okabe-ito/colorbrewer/tol CVD palettes).
+  Traces carry stable `meta` ids; the component's click mapping keys on them.
+- `dash_upset/component.py` -- `UpSet`, subclassing the compiled `DashUpset`;
+  builds the figure from `data`/`sets` + `create_upset` kwargs and exposes
+  `selected_intersection` / `selected_sets` as real component properties.
+- `dash_upset_component/` -- the compiled inner package (webpack bundle with
+  trimmed plotly.js core+bar+scatter, generated `DashUpset.py`). **Build
+  artifacts are committed**; regenerate with `npm install && pixi run
+  build-component` only when `src/lib/` changes. Its `__version__` is bumped
+  by release-please's extra-files updater (x-release-please-version marker).
+- Docs site (M4) at https://phylatech.github.io/dash-upset/ (gh-pages branch,
+  PR previews via pr-preview-action; naturalist-press design).
+- Tests: `tests/test_data.py`, `tests/test_figure.py`, `tests/test_component.py`;
   `pixi run lint` + `pixi run test` pass.
 
-## Next step: M2 (interactive AIO component)
+## Next steps
 
-Build the self-wiring `UpSet(...)` Dash All-in-One component: `dcc.Graph` +
-pattern-matching callbacks, click-to-select via the bar traces' `meta` /
-`customdata`, and `selected_intersection` / `selected_sets` outputs. See the
-"Milestones" section of ROADMAP.md and its Interaction/UX prop sketch.
+Remaining roadmap items: M3 leftovers (vertical orientation, auto text
+descriptions/accessibility), the deviation/attribute multi-panel grid, a
+drill-into-members element table + cross-filter example (original M2 scope),
+and an explorer theme toggle in the docs. Release PR #1 (v0.1.0) stays open
+until the user decides to publish.
 
 ## Working conventions
 
@@ -74,17 +83,23 @@ pattern-matching callbacks, click-to-select via the bar traces' `meta` /
 
 ## Layout
 
-- `dash_upset/` -- the package: `data.py` (model + `from_*` constructors) and
-  `figure.py` (`create_upset`); `component.py` and `theming.py` arrive with
-  M2/M3 per the ROADMAP architecture sketch.
-- `tests/` -- pytest (`test_data.py`, `test_figure.py`, import smoke tests).
-- `pyproject.toml` -- packaging (hatchling) plus pixi, ruff, and pytest config.
+- `dash_upset/` -- the package: `data.py` (model + `from_*` constructors),
+  `figure.py` (`create_upset`, incl. the `theme=` system), `component.py`
+  (`UpSet`).
+- `dash_upset_component/` -- compiled inner package behind `UpSet` (committed
+  webpack bundle + `dash-generate-components` output). Source lives in
+  `src/lib/`; npm toolchain: `package.json`, `webpack.config.js`, `.babelrc`.
+  `DashUpset.py` and `_imports_.py` are generated (ruff-excluded); the
+  package `__init__.py` is hand-written.
+- `tests/` -- pytest (`test_data.py`, `test_figure.py`, `test_component.py`,
+  import smoke tests).
+- `pyproject.toml` -- packaging (hatchling; both packages ship in the wheel)
+  plus pixi, ruff, and pytest config.
+- `docs/` -- the GitHub Pages site (published from the `gh-pages` branch by
+  `.github/workflows/docs.yml`; PR previews via `docs-preview.yml`).
 - Release automation: `release-please-config.json`,
   `.release-please-manifest.json`, and `.github/workflows/`
   (`test.yml`, `publish.yml`, `release-please.yml`).
-- **Deliberately not present yet:** a `docs/` GitHub Pages site (Milestone M4),
-  a `usage.py` demo app, and any npm/webpack toolchain (added only if Option C
-  is chosen).
 
 ## Related
 

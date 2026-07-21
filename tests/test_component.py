@@ -1,70 +1,68 @@
-"""Tests for the UpSet Dash All-in-One component.
+"""Tests for the UpSet Dash component.
 
-The click callback is a thin wrapper over the pure ``_selection_from_click``
-helper, which is unit-tested here without a Dash server. End-to-end callback
-wiring is covered by the (selenium) integration layer.
+``UpSet`` subclasses the compiled ``DashUpset`` React component
+(``dash_upset_component``), building the figure from data and exposing click
+selection as the declared ``selected_intersection`` / ``selected_sets``
+properties. The click-to-selection mapping itself lives in JavaScript
+(``src/lib/components/DashUpset.react.js``); here we cover the Python side:
+construction, prop plumbing, and Dash registration.
 """
 
 import pandas as pd
-from dash import dcc, no_update
+import plotly.graph_objects as go
+import pytest
 
+import dash_upset_component
 from dash_upset import UpSet
-from dash_upset.component import _selection_from_click
-
-# A minimal figure stub: only the stable trace order + meta ids matter.
-FIG = {
-    "data": [
-        {"meta": "upset:intersection-bars"},
-        {"meta": "upset:set-bars"},
-        {"meta": "upset:matrix-background"},
-        {"meta": "upset:matrix-dots"},
-    ]
-}
 
 
-def test_component_builds_graph_and_stores():
+def test_component_is_dash_component_with_figure():
     comp = UpSet(id="genes", data=pd.DataFrame({"A": [1, 0, 1], "B": [1, 1, 0]}))
-    kinds = [type(child).__name__ for child in comp.children]
-    assert kinds == ["Graph", "Store", "Store"]
-    graph = comp.children[0]
-    assert isinstance(graph, dcc.Graph)
-    assert graph.id == UpSet.ids.graph("genes")
-    assert graph.figure is not None
+    assert comp.id == "genes"
+    assert isinstance(comp.figure, go.Figure)
+    metas = {trace.meta for trace in comp.figure.data}
+    assert "upset:intersection-bars" in metas
 
 
-def test_ids_are_addressable():
-    assert UpSet.ids.graph("x") == {"component": "UpSet", "subcomponent": "graph", "aio_id": "x"}
-    assert UpSet.ids.selected_intersection("x")["subcomponent"] == "selected_intersection"
-    assert UpSet.ids.selected_sets("x")["subcomponent"] == "selected_sets"
+def test_component_registers_compiled_namespace():
+    comp = UpSet(data=pd.DataFrame({"A": [1, 0], "B": [1, 1]}))
+    assert comp._namespace == "dash_upset_component"
+    assert comp._type == "DashUpset"
+
+
+def test_selection_props_are_declared():
+    comp = UpSet(data=pd.DataFrame({"A": [1, 0], "B": [1, 1]}))
+    assert "selected_intersection" in comp._prop_names
+    assert "selected_sets" in comp._prop_names
 
 
 def test_component_forwards_create_upset_kwargs():
     comp = UpSet(id="g", data=pd.DataFrame({"A": [1, 0], "B": [1, 1]}), theme="dark")
-    assert comp.children[0].figure.layout.paper_bgcolor == "#1a1a19"
+    assert comp.figure.layout.paper_bgcolor == "#1a1a19"
 
 
-def test_click_intersection_bar():
-    click = {"points": [{"curveNumber": 0, "customdata": ["A & B", 2, "33.3", "+1.0"], "y": 5}]}
-    intersection, sets = _selection_from_click(FIG, click)
-    assert intersection == {"label": "A & B", "sets": ["A", "B"], "size": 5}
-    assert sets is no_update
+def test_component_accepts_container_props():
+    comp = UpSet(
+        data=pd.DataFrame({"A": [1, 0], "B": [1, 1]}),
+        config={"displayModeBar": True},
+        style={"height": "300px"},
+        className="my-upset",
+    )
+    assert comp.config == {"displayModeBar": True}
+    assert comp.style == {"height": "300px"}
+    assert comp.className == "my-upset"
 
 
-def test_click_set_bar():
-    click = {"points": [{"curveNumber": 1, "customdata": ["A", "50.0"]}]}
-    intersection, sets = _selection_from_click(FIG, click)
-    assert sets == ["A"]
-    assert intersection is no_update
+def test_invalid_figure_kwargs_rejected():
+    with pytest.raises(TypeError):
+        UpSet(data=pd.DataFrame({"A": [1, 0]}), nonsense=True)
 
 
-def test_click_matrix_dot_selects_intersection():
-    click = {"points": [{"curveNumber": 3, "customdata": ["A", "A & B (2)"]}]}
-    intersection, sets = _selection_from_click(FIG, click)
-    assert intersection == {"label": "A & B", "sets": ["A", "B"]}
-    assert sets is no_update
+def test_js_dist_points_at_committed_bundle():
+    # Dash serves the compiled bundle from the inner package; the entries must
+    # match files that actually ship (guards against a stale/renamed build).
+    from pathlib import Path
 
-
-def test_click_nothing_is_noop():
-    intersection, sets = _selection_from_click(FIG, None)
-    assert intersection is no_update
-    assert sets is no_update
+    pkg_dir = Path(dash_upset_component.__file__).parent
+    for dist in dash_upset_component._js_dist:
+        assert (pkg_dir / dist["relative_package_path"]).is_file()

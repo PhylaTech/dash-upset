@@ -2,11 +2,11 @@
 
 Interactive [UpSet plots](https://upset.app) for [Plotly Dash](https://dash.plotly.com).
 
-> **Status: early development (pre-1.0).** The data model and the static
-> figure factory (`create_upset`, roadmap milestone M1) are implemented and
-> tested. The self-wiring `UpSet(...)` Dash component with click-selection
-> callbacks is next (M2); see the [roadmap](./ROADMAP.md). Not yet published
-> to PyPI or conda-forge.
+> **Status: early development (pre-1.0).** The data model, the figure factory
+> (`create_upset`), and the interactive `UpSet` Dash component with
+> click-selection callback properties are implemented and tested; see the
+> [roadmap](./ROADMAP.md) for what's next. Not yet published to PyPI or
+> conda-forge. Documentation: https://phylatech.github.io/dash-upset/
 
 ## What is an UpSet plot?
 
@@ -29,11 +29,16 @@ There is no first-class UpSet component for Dash, and wrapping the existing
 JavaScript implementations has real costs: [UpSet.js](https://upset.js.org) is
 **AGPLv3** (unsuitable for a permissively licensed library), and while
 [UpSet 2.0](https://github.com/visdesignlab/upset2) is BSD-3-Clause, embedding
-its React stack would drag a JavaScript build toolchain and a heavy dependency
-tree into every app, and would give up notebook rendering and static export.
-`dash-upset` therefore composes the figure from Plotly primitives in pure
-Python: MIT-clean, notebook-friendly, no JavaScript build step, with
-`upset2-react` documented as the fallback engine if Plotly's interaction
+its React stack would drag a heavy dependency tree into every app and give up
+notebook rendering and static export.
+
+`dash-upset` therefore keeps all UpSet logic (data model, modes, sorting,
+filtering, deviation, theming) in pure Python, composing the figure from
+Plotly primitives: MIT-clean and notebook-friendly. The `UpSet` component adds
+a thin compiled React layer (react-plotly.js) on top of that same figure so
+clicks surface as ordinary Dash component properties; the build artifacts are
+committed, so installing and using the package needs no Node toolchain.
+`upset2-react` remains the documented fallback engine if Plotly's interaction
 ceiling is ever reached. See the [roadmap](./ROADMAP.md) for the full analysis
 and the decision record.
 
@@ -51,8 +56,50 @@ pip install dash-upset
 
 ## Quick start
 
-Build a data model with one of the `from_*` constructors, then render it with
-`create_upset`. For pre-aggregated intersection counts:
+Drop the `UpSet` component into a Dash layout with a dataframe of boolean
+indicator columns (one per set). Clicks surface as component properties your
+callbacks read the standard Dash way:
+
+```python
+import pandas as pd
+from dash import Dash, Input, Output, callback, html
+from dash_upset import UpSet
+
+df = pd.DataFrame(
+    {
+        "Action": [1, 1, 0, 1],
+        "Comedy": [1, 0, 1, 1],
+        "Drama": [0, 1, 1, 1],
+    }
+)
+
+app = Dash(__name__)
+app.layout = html.Div(
+    [
+        UpSet(id="movies", data=df, sets=["Action", "Comedy", "Drama"]),
+        html.Pre(id="out"),
+    ]
+)
+
+
+@callback(Output("out", "children"), Input("movies", "selected_intersection"))
+def show(selection):
+    # {"label": "Action & Comedy", "sets": ["Action", "Comedy"], "size": 2}
+    return str(selection)
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
+```
+
+`selected_intersection` updates when an intersection-size bar or a matrix dot
+is clicked; `selected_sets` (a list of set names) updates when a set-size bar
+is clicked.
+
+### Just the figure
+
+For notebooks, scripts, or static export, `create_upset` takes the same input
+and returns a plain `plotly.graph_objects.Figure`:
 
 ```python
 from dash_upset import create_upset, from_counts
@@ -65,7 +112,7 @@ fig = create_upset(
     }),
     title="Movie genres",
 )
-fig.show()  # a plain plotly Figure: notebooks, scripts, static export
+fig.show()
 ```
 
 Element-level data uses the familiar
@@ -84,24 +131,10 @@ from_indicators(boolean_dataframe)                  # rows = elements, columns =
 cuDF, and Modin frames (or a plain dict of boolean columns) all work, and
 `dash-upset` itself depends on none of those libraries.
 
-Sorting and display are controlled per figure, e.g.
-`create_upset(data, sort_by="degree", sort_sets_by="name", show_counts=False)`.
-
-In a Dash app today, embed the figure in a `dcc.Graph`:
-
-```python
-from dash import Dash, dcc
-from dash_upset import create_upset, from_contents
-
-app = Dash(__name__)
-app.layout = dcc.Graph(figure=create_upset(from_contents({...})))
-
-if __name__ == "__main__":
-    app.run(debug=True)
-```
-
-The self-wiring `UpSet(...)` component (hover/click selection exposed as
-callback outputs) is roadmap milestone M2.
+Sorting and display are controlled per plot, e.g.
+`UpSet(data=df, sets=[...], sort_by="degree", sort_sets_by="name", theme="dark")`;
+`create_upset` accepts the same keywords. The full argument reference lives at
+https://phylatech.github.io/dash-upset/reference.html.
 
 ## Development
 
@@ -112,6 +145,15 @@ pixi install          # create the environment (deps from conda-forge)
 pixi run test         # run the test suite
 pixi run lint         # ruff lint
 pixi run format       # ruff format
+```
+
+The compiled React layer behind the `UpSet` component
+(`dash_upset_component/`) is committed, so none of the above needs Node. To
+change it, edit `src/lib/components/DashUpset.react.js` and rebuild:
+
+```bash
+npm install
+pixi run build-component   # webpack bundle + dash-generate-components classes
 ```
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the commit conventions that drive
