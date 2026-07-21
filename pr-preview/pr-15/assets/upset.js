@@ -3,27 +3,64 @@
  * This is a lightweight JavaScript preview of `create_upset`, used by the
  * Component Explorer so every control updates the plot live in the browser.
  * The PYTHON library (dash_upset) is authoritative; this mirrors its display
- * math (subset modes, deviation, sorting, filtering) and Plotly trace/layout
- * construction closely enough for an interactive preview. The hard part --
- * parsing raw data into the canonical exclusive-intersection model -- is done
- * in Python and embedded as `window.DASH_UPSET_DATASETS`, so only the small,
- * stable display layer lives here.
+ * math (subset modes, deviation, sorting, filtering), the theme system, and
+ * Plotly trace/layout construction closely enough for an interactive preview.
+ * The hard part -- parsing raw data into the canonical exclusive-intersection
+ * model -- is done in Python and embedded as `window.DASH_UPSET_DATASETS`.
  *
  * Keep in sync with dash_upset/figure.py and dash_upset/data.py.
  */
 (function (global) {
     "use strict";
 
-    var INK = "#0b0b0b";
-    var SECONDARY = "#52514e";
-    var MUTED = "#898781";
-    var INACTIVE = "#d8d7d1";
-    var GRID = "#e1e0d9";
-    var BASELINE = "#c3c2b7";
-    var BAND = "rgba(11,11,11,0.04)";
+    // Theme chrome + CVD-safe colorways -- mirror of figure.py's _LIGHT /
+    // _DARK / _PALETTES / _resolve_theme.
+    var LIGHT = {
+        ink: "#0b0b0b", paper: "#ffffff", secondary: "#52514e", muted: "#898781",
+        inactive: "#d8d7d1", grid: "#e1e0d9", baseline: "#c3c2b7", band: "rgba(11,11,11,0.04)",
+    };
+    var DARK = {
+        ink: "#e8e6e1", paper: "#1a1a19", secondary: "#c3c2b7", muted: "#8f8d86",
+        inactive: "#3d3d3a", grid: "#2c2c2a", baseline: "#45443e", band: "rgba(255,255,255,0.05)",
+    };
+    var OKABE_ITO = ["#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7"];
+    var PALETTES = {
+        "okabe-ito": [OKABE_ITO, OKABE_ITO],
+        colorbrewer: [
+            ["#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494"],
+            ["#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E", "#E6AB02", "#A6761D"],
+        ],
+        tol: [
+            ["#4477AA", "#EE6677", "#228833", "#CCBB44", "#66CCEE", "#AA3377", "#BBBBBB"],
+            ["#4477AA", "#EE6677", "#228833", "#CCBB44", "#66CCEE", "#AA3377", "#BBBBBB"],
+        ],
+    };
+
+    function assign(base, extra) {
+        var out = {};
+        for (var k in base) if (base.hasOwnProperty(k)) out[k] = base[k];
+        for (var j in extra) if (extra.hasOwnProperty(j)) out[j] = extra[j];
+        return out;
+    }
+
+    // resolve_theme(name) -> chrome dict + colorway. "auto" resolves to light
+    // in this static preview (the Dash component makes it live).
+    function resolveTheme(theme) {
+        var name = theme === "auto" || !theme ? "light" : theme;
+        var palettes = Object.keys(PALETTES);
+        for (var i = 0; i < palettes.length; i++) {
+            var p = palettes[i];
+            var cw = PALETTES[p];
+            if (name === p || name === p + "-light") return assign(LIGHT, { colorway: cw[0] });
+            if (name === p + "-dark") return assign(DARK, { colorway: cw[1] });
+        }
+        if (name === "light") return assign(LIGHT, { colorway: null });
+        if (name === "dark") return assign(DARK, { colorway: null });
+        return assign(LIGHT, { colorway: null }); // unknown -> light (Python raises)
+    }
 
     function comboKey(sets) {
-        return sets.slice().sort().join("");
+        return sets.slice().sort().join("");
     }
     function labelOf(sets) {
         return sets.length ? sets.join(" & ") : "(no sets)";
@@ -32,7 +69,6 @@
         return total > 0 ? ((100 * part) / total).toFixed(1) : "0.0";
     }
     function isSubset(a, b) {
-        // every element of a is in b
         for (var i = 0; i < a.length; i++) if (b.indexOf(a[i]) === -1) return false;
         return true;
     }
@@ -141,6 +177,11 @@
         var mode = opts.mode || "distinct";
         var showEmpty = !!opts.showEmpty;
         var showCounts = opts.showCounts !== false;
+        var showPct = !!opts.showPercentages;
+
+        var th = resolveTheme(opts.theme);
+        var ink = opts.color || th.ink;
+        var inactive = opts.inactiveColor || th.inactive;
 
         var moded = subsetSizes(model, mode).filter(function (e) {
             return showEmpty || e.sets.length > 0;
@@ -160,54 +201,58 @@
         var nInt = subsets.length;
         var total = model.total;
 
-        var labels = subsets.map(function (e) { return labelOf(e.sets); });
         var sizes = subsets.map(function (e) { return e.size; });
         var maxSize = Math.max.apply(null, sizes);
 
         var dotPx = 13;
         var modeTitle = mode === "union" ? "Union size" : mode === "intersect" ? "Intersection size (intersect)" : "Intersection size";
 
+        // Bar labels: mirror figure.py's texttemplate choice.
+        var barText = null;
+        if (showCounts && showPct) barText = "%{y:,} (%{customdata[2]}%)";
+        else if (showCounts) barText = "%{y:,}";
+        else if (showPct) barText = "%{customdata[2]}%";
+
         var traces = [];
 
         // Intersection-size bars (top right)
         traces.push({
-            type: "bar",
+            type: "bar", meta: "upset:intersection-bars",
             x: subsets.map(function (_, i) { return i; }),
             y: sizes,
             width: 0.6,
-            marker: { color: INK, cornerradius: 4, line: { width: 0 } },
+            marker: { color: ink, cornerradius: 4, line: { width: 0 } },
             customdata: subsets.map(function (e) {
-                return [labelOf(e.sets), e.sets.length, percent(e.size, total), (100 * devMap[comboKey(e.sets)] >= 0 ? "+" : "") + (100 * devMap[comboKey(e.sets)]).toFixed(1)];
+                var dev = 100 * devMap[comboKey(e.sets)];
+                return [labelOf(e.sets), e.sets.length, percent(e.size, total), (dev >= 0 ? "+" : "") + dev.toFixed(1)];
             }),
             hovertemplate: "<b>%{customdata[0]}</b><br>Size: %{y:,} (%{customdata[2]}% of total)<br>Degree: %{customdata[1]}<br>Deviation: %{customdata[3]}%<extra></extra>",
-            text: showCounts ? sizes.map(function (s) { return s.toLocaleString(); }) : null,
+            texttemplate: barText,
             textposition: "outside",
-            textfont: { size: 11, color: SECONDARY },
+            textfont: { size: 11, color: th.secondary },
             cliponaxis: false,
-            xaxis: "x",
-            yaxis: "y",
+            xaxis: "x", yaxis: "y",
         });
 
         // Set-size bars (bottom left, growing leftward)
         traces.push({
-            type: "bar",
+            type: "bar", meta: "upset:set-bars",
             orientation: "h",
             y: setOrder.map(function (_, r) { return r; }),
             x: setOrder.map(function (n) { return sizeOfSet[n]; }),
             width: 0.6,
-            marker: { color: INK, cornerradius: 4, line: { width: 0 } },
+            marker: { color: ink, cornerradius: 4, line: { width: 0 } },
             customdata: setOrder.map(function (n) { return [n, percent(sizeOfSet[n], total)]; }),
             hovertemplate: "<b>%{customdata[0]}</b><br>Size: %{x:,} (%{customdata[1]}% of total)<extra></extra>",
-            xaxis: "x2",
-            yaxis: "y2",
+            xaxis: "x2", yaxis: "y2",
         });
 
         // Matrix background dots (every set x every intersection)
         var bgX = [], bgY = [];
         for (var c = 0; c < nInt; c++) for (var r = 0; r < nSets; r++) { bgX.push(c); bgY.push(r); }
         traces.push({
-            type: "scatter", mode: "markers", x: bgX, y: bgY,
-            marker: { color: INACTIVE, size: dotPx }, hoverinfo: "skip",
+            type: "scatter", mode: "markers", meta: "upset:matrix-background", x: bgX, y: bgY,
+            marker: { color: inactive, size: dotPx }, hoverinfo: "skip",
             xaxis: "x3", yaxis: "y3",
         });
 
@@ -221,8 +266,8 @@
         });
         if (connX.length) {
             traces.push({
-                type: "scatter", mode: "lines", x: connX, y: connY,
-                line: { color: INK, width: 2.5 }, hoverinfo: "skip",
+                type: "scatter", mode: "lines", meta: "upset:matrix-connectors", x: connX, y: connY,
+                line: { color: ink, width: 2.5 }, hoverinfo: "skip",
                 xaxis: "x3", yaxis: "y3",
             });
         }
@@ -237,8 +282,8 @@
         });
         if (dotX.length) {
             traces.push({
-                type: "scatter", mode: "markers", x: dotX, y: dotY, customdata: dotCd,
-                marker: { color: INK, size: dotPx },
+                type: "scatter", mode: "markers", meta: "upset:matrix-dots", x: dotX, y: dotY, customdata: dotCd,
+                marker: { color: ink, size: dotPx },
                 hovertemplate: "<b>%{customdata[0]}</b><br>%{customdata[1]}<extra></extra>",
                 xaxis: "x3", yaxis: "y3",
             });
@@ -246,38 +291,66 @@
 
         var colRange = [-0.5, nInt - 0.5];
         var rowRange = [nSets - 0.5, -0.5];
-        var headroom = showCounts ? 1.18 : 1.05;
+        var headroom = showCounts || showPct ? 1.18 : 1.05;
         var shapes = [];
         for (var rr = 0; rr < nSets; rr += 2) {
             shapes.push({
                 type: "rect", xref: "x3 domain", yref: "y3", x0: 0, x1: 1,
-                y0: rr - 0.5, y1: rr + 0.5, fillcolor: BAND, line: { width: 0 }, layer: "below",
+                y0: rr - 0.5, y1: rr + 0.5, fillcolor: th.band, line: { width: 0 }, layer: "below",
             });
         }
 
-        var longestName = setOrder.reduce(function (m, n) { return Math.max(m, n.length); }, 0);
-        var leftMargin = Math.max(56, longestName * 7 + 18);
-
+        var hasTitle = !!opts.title;
         var layout = {
             showlegend: false,
             height: opts.height || 460,
-            margin: { l: leftMargin, r: 16, t: 16, b: 12 },
-            font: { size: 12, color: SECONDARY },
-            paper_bgcolor: "white",
-            plot_bgcolor: "white",
+            margin: { l: 12, r: 16, t: hasTitle ? 52 : 16, b: 12 },
+            font: { size: 12, color: th.secondary },
+            paper_bgcolor: th.paper,
+            plot_bgcolor: th.paper,
+            colorway: th.colorway || undefined,
             hoverlabel: { font: { size: 12 } },
             bargap: 0.3,
             shapes: shapes,
             xaxis: { domain: [0.26, 1], anchor: "y", range: colRange, showticklabels: false, ticks: "", showgrid: false, zeroline: false },
-            yaxis: { domain: [0.63, 1], anchor: "x", range: [0, maxSize > 0 ? maxSize * headroom : 1], title: { text: modeTitle, font: { size: 12, color: SECONDARY } }, tickfont: { size: 11, color: MUTED }, gridcolor: GRID, zeroline: true, zerolinecolor: BASELINE, nticks: 5 },
-            xaxis2: { domain: [0, 0.23], anchor: "y2", autorange: "reversed", title: { text: "Set size", font: { size: 12, color: SECONDARY } }, tickfont: { size: 11, color: MUTED }, gridcolor: GRID, zeroline: false, nticks: 3 },
-            yaxis2: { domain: [0, 0.57], anchor: "x2", range: rowRange, tickvals: setOrder.map(function (_, r) { return r; }), ticktext: setOrder, tickfont: { size: 12, color: SECONDARY }, ticks: "", showgrid: false, zeroline: false },
+            yaxis: { domain: [0.63, 1], anchor: "x", range: [0, maxSize > 0 ? maxSize * headroom : 1], title: { text: modeTitle, font: { size: 12, color: th.secondary }, standoff: 8 }, tickfont: { size: 11, color: th.muted }, gridcolor: th.grid, zeroline: true, zerolinecolor: th.baseline, nticks: 5, automargin: true },
+            xaxis2: { domain: [0, 0.23], anchor: "y2", autorange: "reversed", title: { text: "Set size", font: { size: 12, color: th.secondary }, standoff: 8 }, tickfont: { size: 11, color: th.muted }, gridcolor: th.grid, zeroline: false, nticks: 3, automargin: true },
+            yaxis2: { domain: [0, 0.57], anchor: "x2", range: rowRange, tickvals: setOrder.map(function (_, r) { return r; }), ticktext: setOrder, tickfont: { size: 12, color: th.secondary }, ticks: "", showgrid: false, zeroline: false, automargin: true },
             xaxis3: { domain: [0.26, 1], anchor: "y3", matches: "x", range: colRange, showticklabels: false, ticks: "", showgrid: false, zeroline: false },
             yaxis3: { domain: [0, 0.57], anchor: "x3", matches: "y2", range: rowRange, showticklabels: false, ticks: "", showgrid: false, zeroline: false },
         };
+        if (hasTitle) {
+            layout.title = { text: opts.title, x: 0, xref: "paper", xanchor: "left", font: { size: 15, color: th.ink } };
+        }
 
         return { data: traces, layout: layout, config: { responsive: true, displayModeBar: false } };
     }
 
-    global.DashUpset = { buildFigure: buildFigure };
+    // Map a plotly click event to the component's selection properties, exactly
+    // as the compiled DashUpset React component does (keyed on trace meta).
+    function selectionFromClick(point) {
+        if (!point) return null;
+        var meta = point.data && point.data.meta;
+        var cd = point.customdata || [];
+        function setsFromLabel(label) {
+            return label && label !== "(no sets)" ? label.split(" & ") : [];
+        }
+        if (meta === "upset:intersection-bars") {
+            var label = cd.length ? cd[0] : null;
+            return { prop: "selected_intersection", value: { label: label, sets: setsFromLabel(label), size: point.y } };
+        }
+        if (meta === "upset:matrix-dots") {
+            var raw = cd.length > 1 ? cd[1] : null;
+            var cut = typeof raw === "string" ? raw.lastIndexOf(" (") : -1;
+            var lbl = cut >= 0 ? raw.slice(0, cut) : raw;
+            return { prop: "selected_intersection", value: { label: lbl, sets: setsFromLabel(lbl) } };
+        }
+        if (meta === "upset:set-bars") {
+            var name = cd.length ? cd[0] : null;
+            return name ? { prop: "selected_sets", value: [name] } : null;
+        }
+        return null;
+    }
+
+    global.DashUpset = { buildFigure: buildFigure, selectionFromClick: selectionFromClick };
 })(window);

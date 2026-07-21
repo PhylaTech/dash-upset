@@ -18,8 +18,7 @@
 <!-- Hero -->
 <header class="hero">
     <h1>dash-upset</h1>
-    <p class="lede">Interactive UpSet plots for Plotly Dash &mdash; in one import.</p>
-    <p>Set-intersection analysis that stays readable where Venn diagrams collapse. Feed it set memberships and get a matrix, set-size bars, and intersection-size bars: as a plain <code>go.Figure</code> for notebooks and static export, or a self-wiring Dash component. Pure Python, MIT, dataframe-agnostic.</p>
+    <p class="lede">Interactive UpSet plots for Plotly Dash, as a drop-in component or a plain figure.</p>
     <div class="badges">
         <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square">
         <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square">
@@ -56,120 +55,7 @@
     </div>
 </section>
 
-<!-- Audience split -->
-<section>
-    <div class="container">
-        <h2>Who it is for</h2>
-        <div class="audience-grid">
-            <div class="audience-card academic">
-                <div class="audience-icon">&#x1F9EC;</div>
-                <h3>Bioinformatics &amp; genomics</h3>
-                <p>Differentially expressed genes across conditions, variants across callers, peaks across samples &mdash; UpSet's origin community and its strongest pull.</p>
-            </div>
-            <div class="audience-card industrial">
-                <div class="audience-icon">&#x1F4C8;</div>
-                <h3>Data science &amp; analytics</h3>
-                <p>Feature co-occurrence, label overlap, cohort membership, error-set analysis across models, users across features or plans, tags across content.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Install -->
-<section id="install">
-    <div class="container">
-        <h2>Install</h2>
-        <p class="section-lead">Pre-release: the package is not on PyPI or conda-forge yet. Install from source for now (<code>pip install git+https://github.com/PhylaTech/dash-upset</code>); the commands below are how it will ship.</p>
-        <div class="install-tabs" data-install>
-            <div class="install-tabs-bar" role="tablist" aria-label="Package manager">
-                <button class="install-tab is-active" data-target="conda" role="tab" aria-selected="true">conda</button>
-                <button class="install-tab" data-target="mamba" role="tab" aria-selected="false">mamba</button>
-                <button class="install-tab" data-target="pixi" role="tab" aria-selected="false">pixi</button>
-                <button class="install-tab" data-target="pip" role="tab" aria-selected="false">pip</button>
-            </div>
-            <div class="install-panel is-active" data-panel="conda">
-                <div class="snippet"><pre><code>conda install -c conda-forge dash-upset</code></pre></div>
-            </div>
-            <div class="install-panel" data-panel="mamba">
-                <div class="snippet"><pre><code>mamba install -c conda-forge dash-upset</code></pre></div>
-            </div>
-            <div class="install-panel" data-panel="pixi">
-                <div class="snippet"><pre><code>pixi add dash-upset</code></pre></div>
-            </div>
-            <div class="install-panel" data-panel="pip">
-                <div class="snippet"><pre><code>pip install dash-upset</code></pre></div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Quick start -->
-<section id="quickstart">
-    <div class="container">
-        <h2>Quick start</h2>
-        <p class="section-lead">Drop the <code>UpSet</code> component into a Dash layout and hand it a dataframe with one boolean column per set. Clicks surface as component properties you read the standard Dash way: <code>Input(id, property)</code>.</p>
-        <div class="snippet">
-<pre><code>import pandas as pd
-from dash import Dash, Input, Output, callback, html
-from dash_upset import UpSet
-
-# One row per misclassified test example; 1 = that model got it wrong.
-# The overlaps are the shared hard cases; the singletons are each
-# model's private blind spots.
-df = pd.DataFrame(
-    {
-        "ResNet": [1, 1, 0, 1, 0, 1],
-        "ViT": [1, 1, 1, 0, 0, 1],
-        "XGBoost": [0, 1, 1, 1, 1, 0],
-    }
-)
-
-app = Dash(__name__)
-app.layout = html.Div(
-    [
-        UpSet(
-            id="errors",
-            data=df,
-            sets=["ResNet", "ViT", "XGBoost"],
-            sort_by="cardinality",  # or "degree", "deviation"
-            mode="distinct",  # or "intersect", "union"
-            theme="auto",  # follows the page (light / dark)
-        ),
-        html.Pre(id="out"),
-    ]
-)
-
-
-@callback(Output("out", "children"), Input("errors", "selected_intersection"))
-def show(selection):
-    # {"label": "ResNet & ViT", "sets": ["ResNet", "ViT"], "size": 2}
-    return str(selection)
-
-
-if __name__ == "__main__":
-    app.run(debug=True)</code></pre>
-        </div>
-        <h3 style="margin-top: 24px;">Just the figure</h3>
-        <p class="section-lead">Need a plain Plotly figure for a notebook, static export, or your own <code>dcc.Graph</code>? <code>create_upset</code> takes the same input and returns a <code>go.Figure</code>.</p>
-        <div class="snippet">
-<pre><code>from dash_upset import create_upset
-
-fig = create_upset(df, sets=["ResNet", "ViT", "XGBoost"], title="Model error sets")
-fig.show()  # or dcc.Graph(figure=fig); export to PNG/SVG/PDF via kaleido</code></pre>
-        </div>
-        <h3 style="margin-top: 24px;">Other input shapes</h3>
-        <p class="section-lead">Pre-aggregated counts, per-set contents, or per-element memberships &mdash; the familiar <a href="https://upsetplot.readthedocs.io" target="_blank" rel="noopener">upsetplot</a> conventions, reimplemented and dataframe-agnostic via <a href="https://github.com/narwhals-dev/narwhals" target="_blank" rel="noopener">narwhals</a>. Pass any of these as <code>data=</code>.</p>
-        <div class="snippet">
-<pre><code>from dash_upset import from_counts, from_memberships, from_contents
-
-from_counts({"Action": 320, "Action&amp;Comedy": 84})  # pre-aggregated sizes
-from_memberships([("A",), ("A", "B"), ()])           # per-element set names
-from_contents({"A": ["x", "y"], "B": ["y", "z"]})    # per-set element ids</code></pre>
-        </div>
-    </div>
-</section>
-
-<!-- Features -->
+<!-- What's in the box -->
 <section class="featured-strip" id="features">
     <div class="container">
         <h2>What's in the box</h2>
@@ -203,6 +89,106 @@ from_contents({"A": ["x", "y"], "B": ["y", "z"]})    # per-set element ids</code
                 <div class="feature-icon" aria-hidden="true">&#x1F9F0;</div>
                 <h3>Dataframe-agnostic</h3>
                 <p>Indicator tables from pandas, Polars, PyArrow, and more, through narwhals &mdash; no pandas dependency.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Install -->
+<section id="install">
+    <div class="container">
+        <h2>Install</h2>
+        <p class="section-lead">Pre-release: not on PyPI or conda-forge yet. Install from source for now (<code>pip install git+https://github.com/PhylaTech/dash-upset</code>); the commands below are how it will ship.</p>
+        <div class="install-tabs" data-install>
+            <div class="install-tabs-bar" role="tablist" aria-label="Package manager">
+                <button class="install-tab is-active" data-target="conda" role="tab" aria-selected="true">conda</button>
+                <button class="install-tab" data-target="mamba" role="tab" aria-selected="false">mamba</button>
+                <button class="install-tab" data-target="pixi" role="tab" aria-selected="false">pixi</button>
+                <button class="install-tab" data-target="pip" role="tab" aria-selected="false">pip</button>
+            </div>
+            <div class="install-panel is-active" data-panel="conda">
+                <div class="snippet"><pre><code>conda install -c conda-forge dash-upset</code></pre></div>
+            </div>
+            <div class="install-panel" data-panel="mamba">
+                <div class="snippet"><pre><code>mamba install -c conda-forge dash-upset</code></pre></div>
+            </div>
+            <div class="install-panel" data-panel="pixi">
+                <div class="snippet"><pre><code>pixi add dash-upset</code></pre></div>
+            </div>
+            <div class="install-panel" data-panel="pip">
+                <div class="snippet"><pre><code>pip install dash-upset</code></pre></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quick start (tabbed: component / figure / data input) -->
+<section id="quickstart">
+    <div class="container">
+        <h2>Quick start</h2>
+        <p class="section-lead">One import, three entry points. They all take the same set data &mdash; switch tabs for the Dash component, a bare figure, or the data constructors.</p>
+        <div class="install-tabs" data-install>
+            <div class="install-tabs-bar" role="tablist" aria-label="Quick start example">
+                <button class="install-tab is-active" data-target="qs-component" role="tab" aria-selected="true">Dash component</button>
+                <button class="install-tab" data-target="qs-figure" role="tab" aria-selected="false">Just the figure</button>
+                <button class="install-tab" data-target="qs-data" role="tab" aria-selected="false">Data input</button>
+            </div>
+
+            <div class="install-panel is-active" data-panel="qs-component">
+                <p class="section-lead">Drop <code>UpSet</code> into a layout; clicks surface as component properties you read the standard Dash way, <code>Input(id, property)</code>.</p>
+                <div class="snippet">
+<pre><code>import pandas as pd
+from dash import Dash, Input, Output, callback, html
+from dash_upset import UpSet
+
+# One row per misclassified test example; 1 = that model got it wrong.
+df = pd.DataFrame(
+    {
+        "ResNet": [1, 1, 0, 1, 0, 1],
+        "ViT": [1, 1, 1, 0, 0, 1],
+        "XGBoost": [0, 1, 1, 1, 1, 0],
+    }
+)
+
+app = Dash(__name__)
+app.layout = html.Div(
+    [
+        UpSet(id="errors", data=df, sets=["ResNet", "ViT", "XGBoost"]),
+        html.Pre(id="out"),
+    ]
+)
+
+
+@callback(Output("out", "children"), Input("errors", "selected_intersection"))
+def show(selection):
+    # {"label": "ResNet & ViT", "sets": ["ResNet", "ViT"], "size": 2}
+    return str(selection)
+
+
+if __name__ == "__main__":
+    app.run(debug=True)</code></pre>
+                </div>
+            </div>
+
+            <div class="install-panel" data-panel="qs-figure">
+                <p class="section-lead">Need a plain Plotly figure for a notebook or static export? <code>create_upset</code> returns a <code>go.Figure</code>.</p>
+                <div class="snippet">
+<pre><code>from dash_upset import create_upset
+
+fig = create_upset(df, sets=["ResNet", "ViT", "XGBoost"], title="Model error sets")
+fig.show()  # or dcc.Graph(figure=fig); export to PNG/SVG/PDF via kaleido</code></pre>
+                </div>
+            </div>
+
+            <div class="install-panel" data-panel="qs-data">
+                <p class="section-lead">Already have counts, per-set contents, or per-element memberships? Build the model with a <code>from_*</code> constructor and pass it as <code>data=</code> (dataframe-agnostic via <a href="https://github.com/narwhals-dev/narwhals" target="_blank" rel="noopener">narwhals</a>).</p>
+                <div class="snippet">
+<pre><code>from dash_upset import from_counts, from_memberships, from_contents
+
+from_counts({"ResNet": 140, "ResNet&amp;ViT": 210})     # pre-aggregated sizes
+from_memberships([("ResNet",), ("ResNet", "ViT")])   # per-element set names
+from_contents({"ResNet": ["x", "y"], "ViT": ["y"]})  # per-set element ids</code></pre>
+                </div>
             </div>
         </div>
     </div>
