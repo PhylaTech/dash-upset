@@ -41,6 +41,11 @@
         el.dataset.appendChild(opt);
     });
 
+    // Default to the model-errors dataset (a data-science framing that shows
+    // the component's utility better than the movie-genre toy set).
+    var defaultIdx = datasets.findIndex(function (d) { return d.id === "model-errors"; });
+    if (defaultIdx >= 0) el.dataset.value = String(defaultIdx);
+
     function num(input) {
         if (input.value === "" || input.value == null) return null;
         var v = Number(input.value);

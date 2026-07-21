@@ -169,8 +169,9 @@ def show(selection):
                 <article class="prop" id="mode">
                     <div class="prop-head"><h3>mode<a class="anchor" href="#mode">#</a></h3><span class="pill type">str</span><span class="pill default">"distinct"</span></div>
                     <div class="prop-body">
-                        <p>How each subset is counted. The dot matrix looks the same in every mode; only the bar heights change.</p>
-                        <p><code>"distinct"</code> counts elements in <em>exactly</em> those sets (the classic exclusive intersection &mdash; bars sum to the total). <code>"intersect"</code> counts elements in <em>all</em> of those sets regardless of others. <code>"union"</code> counts elements in <em>at least one</em>. The two inclusive modes overlap, so their bars do not sum to the total.</p>
+                        <p>How each subset is counted. The dot matrix is identical in every mode &mdash; the dots fix <em>which</em> sets a column represents (its degree). <code>mode</code> only changes <em>how the bar height for that column is counted</em>.</p>
+                        <p><code>"distinct"</code> counts elements in <em>exactly</em> those sets and no others (the classic exclusive intersection &mdash; columns are mutually exclusive, so bars sum to the total). <code>"intersect"</code> counts elements in <em>at least</em> those sets, i.e. the full <code>|A &cap; B|</code> including elements also in other sets. <code>"union"</code> counts elements in <em>at least one</em>, i.e. <code>|A &cup; B|</code>. The two inclusive modes overlap, so their bars do not sum to the total.</p>
+                        <p><strong>Worked example.</strong> Say 84 elements are in A and B only, and 40 more are in A, B, and C. The <code>A &amp; B</code> column (degree 2) shows <strong>84</strong> in <code>distinct</code> mode, but <strong>124</strong> (84 + 40) in <code>intersect</code> mode &mdash; same column, different count.</p>
                     </div>
                 </article>
 

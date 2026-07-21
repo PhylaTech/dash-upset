@@ -26,32 +26,10 @@
         <img alt="Built on Plotly" src="https://img.shields.io/badge/built%20on-Plotly-2563eb?style=flat-square">
     </div>
     <div class="hero-actions">
-        <a class="btn btn-light" href="#demo">See it live</a>
+        <a class="btn btn-light" href="./explorer.html">Try it live</a>
         <a class="btn btn-outline" href="https://github.com/PhylaTech/dash-upset" target="_blank" rel="noopener">View on GitHub</a>
     </div>
 </header>
-
-<!-- Live demo -->
-<section class="featured-strip" id="demo">
-    <div class="container">
-        <h2>A live UpSet plot</h2>
-        <p class="section-lead">Movie genres and their overlaps. Switch the counting mode to see how the same combinations are measured differently &mdash; hover any bar for size, degree, and deviation.</p>
-        <div class="demo-controls">
-            <span class="seg-label">Mode</span>
-            <div class="seg" id="mode-seg">
-                <button data-mode="distinct" class="active">distinct</button>
-                <button data-mode="intersect">intersect</button>
-                <button data-mode="union">union</button>
-            </div>
-        </div>
-        <div class="demo-wrap">
-            <div id="demo-plot"></div>
-            <p id="demo-fallback" hidden style="color: var(--color-text-muted); font-size: 0.9rem; padding: 12px;">
-                The interactive demo needs JavaScript and network access to load Plotly.
-            </p>
-        </div>
-    </div>
-</section>
 
 <!-- What is an UpSet plot -->
 <section id="what">
@@ -135,11 +113,14 @@
 from dash import Dash, Input, Output, callback, html
 from dash_upset import UpSet
 
+# One row per misclassified test example; 1 = that model got it wrong.
+# The overlaps are the shared hard cases; the singletons are each
+# model's private blind spots.
 df = pd.DataFrame(
     {
-        "Action": [1, 1, 0, 1],
-        "Comedy": [1, 0, 1, 1],
-        "Drama": [0, 1, 1, 1],
+        "ResNet": [1, 1, 0, 1, 0, 1],
+        "ViT": [1, 1, 1, 0, 0, 1],
+        "XGBoost": [0, 1, 1, 1, 1, 0],
     }
 )
 
@@ -147,9 +128,9 @@ app = Dash(__name__)
 app.layout = html.Div(
     [
         UpSet(
-            id="movies",
+            id="errors",
             data=df,
-            sets=["Action", "Comedy", "Drama"],
+            sets=["ResNet", "ViT", "XGBoost"],
             sort_by="cardinality",  # or "degree", "deviation"
             mode="distinct",  # or "intersect", "union"
             theme="auto",  # follows the page (light / dark)
@@ -159,9 +140,9 @@ app.layout = html.Div(
 )
 
 
-@callback(Output("out", "children"), Input("movies", "selected_intersection"))
+@callback(Output("out", "children"), Input("errors", "selected_intersection"))
 def show(selection):
-    # {"label": "Action & Comedy", "sets": ["Action", "Comedy"], "size": 2}
+    # {"label": "ResNet & ViT", "sets": ["ResNet", "ViT"], "size": 2}
     return str(selection)
 
 
@@ -173,7 +154,7 @@ if __name__ == "__main__":
         <div class="snippet">
 <pre><code>from dash_upset import create_upset
 
-fig = create_upset(df, sets=["Action", "Comedy", "Drama"], title="Movie genres")
+fig = create_upset(df, sets=["ResNet", "ViT", "XGBoost"], title="Model error sets")
 fig.show()  # or dcc.Graph(figure=fig); export to PNG/SVG/PDF via kaleido</code></pre>
         </div>
         <h3 style="margin-top: 24px;">Other input shapes</h3>
@@ -238,41 +219,6 @@ from_contents({"A": ["x", "y"], "B": ["y", "z"]})    # per-set element ids</code
 
 <script src="./assets/nav.js?v=7"></script>
 <script src="./assets/install.js?v=1"></script>
-<script src="https://cdn.plot.ly/plotly-3.7.0.min.js" charset="utf-8"></script>
-<script src="./assets/demo.js?v=1"></script>
-<script>
-    (function renderDemo() {
-        var mount = document.getElementById("demo-plot");
-        var fallback = document.getElementById("demo-fallback");
-        var demos = window.DASH_UPSET_DEMO;
-        if (!mount || !window.Plotly || !demos) {
-            if (fallback) fallback.hidden = false;
-            if (mount) mount.hidden = true;
-            return;
-        }
-        var config = { responsive: true, displayModeBar: false };
-        var current = "distinct";
-
-        function draw(mode) {
-            var fig = demos[mode];
-            Plotly.react(mount, fig.data, fig.layout, config);
-        }
-        draw(current);
-
-        var seg = document.getElementById("mode-seg");
-        if (seg) {
-            seg.addEventListener("click", function (e) {
-                var btn = e.target.closest("button[data-mode]");
-                if (!btn) return;
-                current = btn.getAttribute("data-mode");
-                seg.querySelectorAll("button").forEach(function (b) {
-                    b.classList.toggle("active", b === btn);
-                });
-                draw(current);
-            });
-        }
-    })();
-</script>
 
 </body>
 </html>
