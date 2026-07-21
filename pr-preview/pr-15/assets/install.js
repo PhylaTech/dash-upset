@@ -8,8 +8,16 @@
     function wire(root) {
         var widgets = root.querySelectorAll("[data-install]");
         Array.prototype.forEach.call(widgets, function (w) {
-            var tabs = w.querySelectorAll(".install-tab");
-            var panels = w.querySelectorAll(".install-panel");
+            // Scope to THIS widget's own tabs/panels so nested [data-install]
+            // widgets (e.g. constructors inside a quick-start tab) don't get
+            // toggled by their parent.
+            var scoped = function (sel) {
+                return Array.prototype.filter.call(w.querySelectorAll(sel), function (n) {
+                    return n.closest("[data-install]") === w;
+                });
+            };
+            var tabs = scoped(".install-tab");
+            var panels = scoped(".install-panel");
             Array.prototype.forEach.call(tabs, function (tab) {
                 tab.addEventListener("click", function () {
                     var target = tab.getAttribute("data-target");

@@ -181,13 +181,68 @@ fig.show()  # or dcc.Graph(figure=fig); export to PNG/SVG/PDF via kaleido</code>
             </div>
 
             <div class="install-panel" data-panel="qs-data">
-                <p class="section-lead">Already have counts, per-set contents, or per-element memberships? Build the model with a <code>from_*</code> constructor and pass it as <code>data=</code> (dataframe-agnostic via <a href="https://github.com/narwhals-dev/narwhals" target="_blank" rel="noopener">narwhals</a>).</p>
-                <div class="snippet">
-<pre><code>from dash_upset import from_counts, from_memberships, from_contents
+                <p class="section-lead">Already have counts, per-set contents, or per-element memberships? Build the model with a <code>from_*</code> constructor, then hand it to the <code>UpSet</code> component (<code>data=</code>). For a plain <code>go.Figure</code> to <code>.show()</code> or export, pass the same model to <code>create_upset(data)</code> instead.</p>
+                <div class="install-tabs" data-install>
+                    <div class="install-tabs-bar" role="tablist" aria-label="Data constructor">
+                        <button class="install-tab is-active" data-target="d-counts" role="tab" aria-selected="true">from_counts</button>
+                        <button class="install-tab" data-target="d-memberships" role="tab" aria-selected="false">from_memberships</button>
+                        <button class="install-tab" data-target="d-contents" role="tab" aria-selected="false">from_contents</button>
+                    </div>
+                    <div class="install-panel is-active" data-panel="d-counts">
+                        <p class="section-lead">Pre-aggregated intersection sizes, keyed by <code>&amp;</code>-joined set names. Best when you already have counts.</p>
+                        <div class="snippet">
+<pre><code>from dash import Dash
+from dash_upset import UpSet, from_counts
 
-from_counts({"ResNet": 140, "ResNet&amp;ViT": 210})     # pre-aggregated sizes
-from_memberships([("ResNet",), ("ResNet", "ViT")])   # per-element set names
-from_contents({"ResNet": ["x", "y"], "ViT": ["y"]})  # per-set element ids</code></pre>
+data = from_counts(
+    {
+        "ResNet": 140,
+        "ViT": 120,
+        "ResNet&amp;ViT": 210,
+    }
+)
+
+app = Dash(__name__)
+app.layout = UpSet(id="errors", data=data)</code></pre>
+                        </div>
+                    </div>
+                    <div class="install-panel" data-panel="d-memberships">
+                        <p class="section-lead">One entry per element: the tuple of sets it belongs to. Best when you have raw per-record labels.</p>
+                        <div class="snippet">
+<pre><code>from dash import Dash
+from dash_upset import UpSet, from_memberships
+
+data = from_memberships(
+    [
+        ("ResNet", "ViT"),
+        ("ResNet",),
+        ("ViT", "XGBoost"),
+        (),
+    ]
+)
+
+app = Dash(__name__)
+app.layout = UpSet(id="errors", data=data)</code></pre>
+                        </div>
+                    </div>
+                    <div class="install-panel" data-panel="d-contents">
+                        <p class="section-lead">Per-set element ids; the overlaps are computed for you. Best when you have a membership list per set.</p>
+                        <div class="snippet">
+<pre><code>from dash import Dash
+from dash_upset import UpSet, from_contents
+
+data = from_contents(
+    {
+        "ResNet": ["img1", "img2", "img3"],
+        "ViT": ["img2", "img3", "img4"],
+        "XGBoost": ["img3", "img5"],
+    }
+)
+
+app = Dash(__name__)
+app.layout = UpSet(id="errors", data=data)</code></pre>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -204,7 +259,7 @@ from_contents({"ResNet": ["x", "y"], "ViT": ["y"]})  # per-set element ids</code
 </footer>
 
 <script src="./assets/nav.js?v=7"></script>
-<script src="./assets/install.js?v=1"></script>
+<script src="./assets/install.js?v=2"></script>
 
 </body>
 </html>
