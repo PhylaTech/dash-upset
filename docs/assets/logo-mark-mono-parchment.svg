@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" role="img" aria-label="dash-upset">
+  <rect x="2.7" y="2.5" width="4.6" height="8.5" rx="1.4" fill="#f2ede2"></rect>
+  <rect x="9.7" y="4.5" width="4.6" height="6.5" rx="1.4" fill="#f2ede2"></rect>
+  <rect x="16.7" y="6.5" width="4.6" height="4.5" rx="1.4" fill="#f2ede2"></rect>
+  <line x1="3" y1="13.4" x2="21" y2="13.4" stroke="#f2ede2" stroke-opacity="0.35" stroke-width="0.9"></line>
+  <line x1="5" y1="18.7" x2="12" y2="18.7" stroke="#f2ede2" stroke-width="2"></line>
+  <circle cx="5" cy="18.7" r="2.4" fill="#f2ede2"></circle>
+  <circle cx="12" cy="18.7" r="2.4" fill="#f2ede2"></circle>
+  <circle cx="19" cy="18.7" r="2.4" fill="none" stroke="#f2ede2" stroke-width="1.7"></circle>
+</svg>
