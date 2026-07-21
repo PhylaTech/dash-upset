@@ -318,7 +318,6 @@
         var hasTitle = !!opts.title;
         var layout = {
             showlegend: false,
-            height: opts.height || 460,
             margin: { l: 12, r: 16, t: hasTitle ? 52 : 16, b: 12 },
             font: { size: 12, color: th.secondary },
             paper_bgcolor: th.paper,
@@ -337,6 +336,9 @@
         if (hasTitle) {
             layout.title = { text: opts.title, x: 0, xref: "paper", xanchor: "left", font: { size: 15, color: th.ink } };
         }
+        // A fixed height is optional: without it the plot autosizes to its
+        // container (the explorer's viewport-locked canvas).
+        if (opts.height) layout.height = opts.height;
 
         return { data: traces, layout: layout, config: { responsive: true, displayModeBar: false } };
     }

@@ -32,6 +32,7 @@
         showEmpty: document.getElementById("ctrl-showempty"),
         theme: document.getElementById("ctrl-theme"),
         color: document.getElementById("ctrl-color"),
+        inactiveOn: document.getElementById("ctrl-inactive-on"),
         inactive: document.getElementById("ctrl-inactive"),
         title: document.getElementById("ctrl-title"),
         showIntTitle: document.getElementById("ctrl-show-inttitle"),
@@ -86,7 +87,9 @@
             showEmpty: el.showEmpty.checked,
             theme: el.theme.value,
             color: str(el.color),
-            inactiveColor: str(el.inactive),
+            // Color pickers always carry a value; inactive applies only when
+            // its override checkbox is ticked (else the theme default stands).
+            inactiveColor: el.inactiveOn.checked ? el.inactive.value : null,
             title: str(el.title),
             // Axis titles: unchecked -> hide (null); checked + blank -> auto
             // (undefined); checked + text -> override.
@@ -96,8 +99,9 @@
             showSetSizeTicks: el.setTicks.checked,
             // Component (interaction) props, not figure args:
             highlightSelection: el.highlight.checked,
-            selectionColor: str(el.selColor) || "#9c5a3c",
-            height: 460,
+            selectionColor: el.selColor.value || "#9c5a3c",
+            // No fixed height: the plot autosizes to fill the canvas (which is
+            // sized by the no-scroll viewport lock).
         };
     }
 
@@ -176,6 +180,9 @@
         var opts = readOptions();
         var fig = window.DashUpset.buildFigure(dataset.model, opts);
 
+        // The inactive-color picker is live only when its override is ticked.
+        el.inactive.disabled = !el.inactiveOn.checked;
+
         if (!fig) {
             window.Plotly.purge(root);
             root.innerHTML =
@@ -183,6 +190,8 @@
                 "No subsets match these filters. Loosen a filter to see the plot.</p>";
         } else {
             window.Plotly.react(root, fig.data, fig.layout, fig.config);
+            // Autosized figure: fit it to the (viewport-locked) canvas.
+            window.Plotly.Plots.resize(root);
             // Snapshot the base colors so click-highlight paints over them.
             baseColors = window.DashUpset.baseColorsOf(fig);
             // Rebind after every (re)render: Plotly.purge on the no-subsets
@@ -197,12 +206,34 @@
         }
     }
 
+    // Export the current (customized) figure as a static image.
+    function exportImage(format) {
+        if (!root.classList.contains("js-plotly-plot")) return;
+        var box = root.getBoundingClientRect();
+        window.Plotly.downloadImage(root, {
+            format: format,
+            filename: "upset",
+            width: Math.round(box.width) || 900,
+            height: Math.round(box.height) || 520,
+            scale: format === "png" ? 2 : 1,
+        });
+    }
+    var pngBtn = document.getElementById("btn-export-png");
+    var svgBtn = document.getElementById("btn-export-svg");
+    if (pngBtn) pngBtn.addEventListener("click", function () { exportImage("png"); });
+    if (svgBtn) svgBtn.addEventListener("click", function () { exportImage("svg"); });
+
     Object.keys(el).forEach(function (k) {
         var node = el[k];
         if (node && (node.tagName === "SELECT" || node.tagName === "INPUT")) {
             var evt = node.type === "checkbox" || node.tagName === "SELECT" ? "change" : "input";
             node.addEventListener(evt, render);
         }
+    });
+
+    // Keep the autosized plot fitted when the viewport changes.
+    window.addEventListener("resize", function () {
+        if (root.classList.contains("js-plotly-plot")) window.Plotly.Plots.resize(root);
     });
 
     render();

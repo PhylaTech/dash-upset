@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Component Explorer &mdash; dash-upset</title>
-    <meta name="description" content="Interactively configure a dash-upset plot -- counting mode, sorting, filtering, theming, and labels -- and copy the matching Python snippet.">
+    <meta name="description" content="Interactively configure a dash-upset plot -- counting mode, sorting, filtering, theming, labels, and selection -- export it, and copy the matching Python snippet.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,55 +18,70 @@
     <style>
         /* ============================================================
            Component Explorer -- workbench
-           Two control rails flank a centered, tabbed canvas (Preview /
-           Code / Install). Every control maps to a create_upset(...) /
-           UpSet(...) argument; each has an info tooltip linking to the
-           reference.
+           A centered, tabbed canvas with control cards wrapping its left,
+           right, and bottom edges. On desktop the whole page is locked to
+           one viewport: no scrolling, so every change stays in view.
            ============================================================ */
-        .bench { padding: 20px 0 28px; }
-        .bench > .container { display: flex; flex-direction: column; gap: 14px; }
-        .bench-head { margin-bottom: 2px; }
-        .bench-head h1 { margin: 0 0 4px; }
-        .bench-head p { margin: 0; color: var(--color-text-muted); max-width: 60ch; }
+        .bench { padding: 10px 0 0; }
+        .bench > .container { display: flex; flex-direction: column; gap: 10px; }
+        .bench-head h1 { margin: 0 0 2px; }
+        .bench-head p { margin: 0; color: var(--color-text-muted); max-width: 70ch; font-size: 0.92rem; }
 
         .workbench {
-            display: grid; grid-template-columns: 264px minmax(0, 1fr) 264px;
-            gap: 16px; align-items: start;
+            display: grid;
+            grid-template-columns: 240px minmax(0, 1fr) 240px;
+            grid-template-rows: minmax(0, 1fr) auto;
+            grid-template-areas: "left canvas right" "deck deck deck";
+            gap: 12px; align-items: stretch;
         }
-        .rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+        .rail-left { grid-area: left; }
+        .rail-right { grid-area: right; }
+        .canvas { grid-area: canvas; }
+        .deck { grid-area: deck; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .deck .control-card { padding: 8px 11px; gap: 5px; }
+        .deck .ctrl { gap: 2px; }
+        .deck .toggle-row { min-height: 22px; }
+        .deck .ctrl-inline { min-height: 22px; }
+        .rail { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
 
         .control-card {
             border: 1px solid var(--ink-hairline); border-radius: var(--radius-lg);
-            background: var(--parchment-pale); padding: 12px 14px;
-            display: flex; flex-direction: column; gap: 10px;
+            background: var(--parchment-pale); padding: 10px 12px;
+            display: flex; flex-direction: column; gap: 8px;
         }
         .card-title {
-            margin: 0; font-size: 0.66rem; font-weight: 700; text-transform: uppercase;
+            margin: 0; font-size: 0.64rem; font-weight: 700; text-transform: uppercase;
             letter-spacing: 0.06em; color: var(--tannin);
         }
 
         /* Control primitives */
-        .ctrl { display: flex; flex-direction: column; gap: 4px; }
+        .ctrl { display: flex; flex-direction: column; gap: 3px; }
         .ctrl-head { display: flex; align-items: center; gap: 6px; }
         .ctrl-head label {
-            font-size: 0.72rem; font-weight: 600; color: var(--color-text-muted);
+            font-size: 0.7rem; font-weight: 600; color: var(--color-text-muted);
             text-transform: uppercase; letter-spacing: 0.03em;
         }
         .ctrl select,
         .ctrl input[type="number"],
         .ctrl input[type="text"] {
-            font-size: 0.88rem; padding: 6px 9px; border: 1px solid var(--color-border);
+            font-size: 0.85rem; padding: 5px 8px; border: 1px solid var(--color-border);
             border-radius: var(--radius); background: var(--color-bg); color: var(--color-text);
             width: 100%; box-sizing: border-box;
         }
+        .ctrl input[type="color"] {
+            width: 100%; height: 28px; padding: 2px; border: 1px solid var(--color-border);
+            border-radius: var(--radius); background: var(--color-bg); cursor: pointer;
+        }
         .toggle-row { display: flex; align-items: center; gap: 6px; }
         .ctrl-inline {
-            display: flex; align-items: center; gap: 8px; min-height: 26px; flex: 1;
-            font-size: 0.85rem; font-weight: 400; color: var(--color-text);
+            display: flex; align-items: center; gap: 7px; min-height: 24px; flex: 1;
+            font-size: 0.82rem; font-weight: 400; color: var(--color-text);
             text-transform: none; letter-spacing: 0;
         }
-        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .filter-grid .ctrl.full { grid-column: 1 / -1; }
+        .deck-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+        .deck-grid .full { grid-column: 1 / -1; }
 
         /* Info tooltip trigger + popover */
         .info {
@@ -78,7 +93,7 @@
         }
         .info:hover, .info:focus-visible { color: var(--tannin); border-color: var(--tannin); outline: none; }
         .info-pop {
-            position: absolute; z-index: 100; max-width: 264px;
+            position: fixed; z-index: 100; max-width: 264px;
             background: var(--parchment-pale); border: 1px solid var(--ink-hairline-strong);
             border-radius: var(--radius); padding: 10px 12px;
             font-size: 0.8rem; line-height: 1.45; color: var(--color-text);
@@ -93,11 +108,11 @@
         .canvas {
             border: 1px solid var(--ink-hairline); border-radius: var(--radius-lg);
             background: var(--color-bg); overflow: hidden;
-            display: flex; flex-direction: column;
+            display: flex; flex-direction: column; min-height: 0;
         }
         .canvas-bar {
             display: flex; align-items: center; justify-content: space-between;
-            gap: 8px 12px; flex-wrap: wrap;
+            gap: 8px 12px; flex-wrap: wrap; padding-right: 12px;
             background: var(--parchment-pale);
             border-bottom: 1px solid var(--ink-hairline);
         }
@@ -105,29 +120,39 @@
         .tab {
             appearance: none; background: none; border: none; cursor: pointer;
             font: inherit; font-size: 0.86rem; font-weight: 600; letter-spacing: 0.01em;
-            color: var(--color-text-muted); padding: 11px 16px;
+            color: var(--color-text-muted); padding: 10px 16px;
             border-bottom: 2px solid transparent; margin-bottom: -1px;
             transition: color 120ms ease;
         }
         .tab:hover { color: var(--color-text); }
         .tab[aria-selected="true"] { color: var(--color-text); border-bottom-color: var(--tannin); }
+        .canvas-actions { display: flex; align-items: center; gap: 7px; }
+        .canvas-actions .lbl {
+            font-size: 0.66rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: var(--color-text-muted);
+        }
+        .btn-sm {
+            appearance: none; cursor: pointer; font: inherit; font-size: 0.8rem; font-weight: 500;
+            padding: 4px 12px; border: 1px solid var(--color-border); border-radius: var(--radius);
+            background: var(--color-bg); color: var(--color-text);
+        }
+        .btn-sm:hover { border-color: var(--tannin); color: var(--tannin); }
 
-        .canvas-body { display: flex; flex-direction: column; min-height: 0; }
-        .tabpanel { padding: 14px; }
+        .canvas-body { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+        .tabpanel { padding: 12px; display: flex; flex-direction: column; min-height: 0; flex: 1; }
         .tabpanel.is-hidden { display: none; }
 
         #upset-root {
+            flex: 1; min-height: 160px;
             border: 1px solid var(--ink-hairline); border-radius: var(--radius);
-            background: #fff; min-height: 460px; overflow: hidden;
+            background: #fff; overflow: hidden;
         }
 
-        /* Selection readouts: the component's actual callback-targetable
-           properties (selected_intersection / selected_sets), updated on
-           click -- nothing that isn't a real prop. */
-        .readouts { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        /* Selection readouts: the component's real callback-targetable props. */
+        .readouts { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: 0 0 auto; }
         .readout {
             background: var(--parchment-pale); border: 1px solid var(--ink-hairline);
-            border-radius: var(--radius); padding: 9px 11px; min-width: 0;
+            border-radius: var(--radius); padding: 8px 11px; min-width: 0;
         }
         .readout .prop {
             display: block; font-size: 0.72rem; font-weight: 700; color: var(--tannin);
@@ -137,14 +162,27 @@
             display: block; font-size: 0.78rem; color: var(--color-text);
             font-family: "SFMono-Regular", Consolas, monospace; overflow-wrap: anywhere;
         }
-        .readout-hint { margin: 8px 0 0; font-size: 0.76rem; color: var(--color-text-muted); }
+        .readout-hint { margin: 7px 0 0; font-size: 0.74rem; color: var(--color-text-muted); flex: 0 0 auto; }
 
-        .code-panel .snippet { margin: 0; }
+        .code-panel .snippet { margin: 0; overflow: auto; }
         .code-panel pre { margin: 0; }
         .code-hint { margin: 0 0 10px; font-size: 0.82rem; color: var(--color-text-muted); }
 
+        /* Desktop: lock to one viewport, no page scroll. */
+        @media (min-width: 961px) {
+            html { height: 100%; }
+            body[data-page="explorer"] { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+            body[data-page="explorer"] .bench { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+            body[data-page="explorer"] .bench > .container { flex: 1 1 auto; min-height: 0; }
+            .workbench { flex: 1 1 auto; min-height: 0; }
+            body[data-page="explorer"] > footer { flex: 0 0 auto; padding: 6px 0; font-size: 0.78rem; }
+        }
+
+        /* Narrow: stack canvas, then the control groups; let the page scroll. */
         @media (max-width: 960px) {
-            .workbench { grid-template-columns: 1fr; }
+            .workbench { grid-template-columns: 1fr; grid-template-areas: "canvas" "left" "right" "deck"; }
+            .deck { grid-template-columns: 1fr; }
+            #upset-root { min-height: 440px; }
         }
     </style>
 </head>
@@ -156,11 +194,11 @@
     <div class="container">
         <div class="bench-head">
             <h1>Component Explorer</h1>
-            <p>Configure a live UpSet plot &mdash; every control maps to a <code>create_upset</code> / <code>UpSet</code> argument (hover the <span aria-hidden="true">&#9432;</span> for what each does). The <strong>Code</strong> tab shows the matching snippet; swap in your own data and it ships to Dash as-is.</p>
+            <p>Every control maps to a <code>create_upset</code> / <code>UpSet</code> argument &mdash; hover <span aria-hidden="true">&#9432;</span> for details, export the figure, or copy the snippet from the <strong>Code</strong> tab.</p>
         </div>
 
         <div class="workbench" aria-label="Component workbench">
-            <!-- LEFT rail: data + counting/sorting -->
+            <!-- LEFT: data + counting -->
             <aside class="rail rail-left" aria-label="Dataset and counting controls">
                 <div class="control-card">
                     <h4 class="card-title">Dataset</h4>
@@ -212,6 +250,11 @@
                         <button class="tab" id="tab-code" data-tab="code" role="tab" aria-selected="false" aria-controls="panel-code">Code</button>
                         <button class="tab" id="tab-install" data-tab="install" role="tab" aria-selected="false" aria-controls="panel-install">Install</button>
                     </div>
+                    <div class="canvas-actions">
+                        <span class="lbl">Export</span>
+                        <button type="button" id="btn-export-svg" class="btn-sm">SVG</button>
+                        <button type="button" id="btn-export-png" class="btn-sm">PNG</button>
+                    </div>
                 </div>
                 <div class="canvas-body">
                     <div class="tabpanel" id="panel-preview" role="tabpanel" aria-labelledby="tab-preview">
@@ -229,7 +272,7 @@
                                 <span class="val" id="ro-sets">[]</span>
                             </div>
                         </div>
-                        <p class="readout-hint">Click an intersection bar or matrix dot to set <code>selected_intersection</code>; click a set-size bar to set <code>selected_sets</code>. These are the exact properties your Dash callbacks read via <code>Input(id, property)</code>.</p>
+                        <p class="readout-hint">Click an intersection bar or matrix dot to set <code>selected_intersection</code>; click a set-size bar to set <code>selected_sets</code> &mdash; the exact properties your callbacks read via <code>Input(id, property)</code>.</p>
                     </div>
                     <div class="tabpanel code-panel is-hidden" id="panel-code" role="tabpanel" aria-labelledby="tab-code">
                         <p class="code-hint">Live preview of the code behind the plot. Copy it, install <code>dash-upset</code>, and run.</p>
@@ -260,8 +303,8 @@
                 </div>
             </div>
 
-            <!-- RIGHT rail: filtering + labels + appearance -->
-            <aside class="rail rail-right" aria-label="Filtering, labels and appearance controls">
+            <!-- RIGHT: filtering + labels -->
+            <aside class="rail rail-right" aria-label="Filtering and label controls">
                 <div class="control-card">
                     <h4 class="card-title">Filtering</h4>
                     <div class="filter-grid">
@@ -293,53 +336,65 @@
                     <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-showpct" type="checkbox"> show_percentages</label><button type="button" class="info" data-ref="show_percentages" data-help="Label each bar with its percent of the total. Combined with &lt;code&gt;show_counts&lt;/code&gt; the label reads &lt;code&gt;N (X%)&lt;/code&gt;.">i</button></div>
                     <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-showempty" type="checkbox"> show_empty</label><button type="button" class="info" data-ref="show_empty" data-help="Include the empty intersection (elements in no set).">i</button></div>
                 </div>
+            </aside>
+
+            <!-- BOTTOM: appearance + axis labels + selection -->
+            <div class="deck">
                 <div class="control-card">
                     <h4 class="card-title">Appearance</h4>
-                    <div class="ctrl">
-                        <div class="ctrl-head"><label for="ctrl-theme">theme</label><button type="button" class="info" data-ref="theme" data-help="Light, dark, or auto, plus colorblind-safe palettes (Okabe-Ito, ColorBrewer, Paul Tol) in light and dark variants.">i</button></div>
-                        <select id="ctrl-theme">
-                            <option value="light" selected>light</option>
-                            <option value="dark">dark</option>
-                            <option value="auto">auto</option>
-                            <option value="okabe-ito-light">okabe-ito-light</option>
-                            <option value="okabe-ito-dark">okabe-ito-dark</option>
-                            <option value="colorbrewer-light">colorbrewer-light</option>
-                            <option value="colorbrewer-dark">colorbrewer-dark</option>
-                            <option value="tol-light">tol-light</option>
-                            <option value="tol-dark">tol-dark</option>
-                        </select>
-                    </div>
-                    <div class="ctrl">
-                        <div class="ctrl-head"><label for="ctrl-color">color</label><button type="button" class="info" data-ref="color" data-help="Color of the bars, active dots, and connectors. Overrides the theme ink. Any CSS color, e.g. &lt;code&gt;#9c5a3c&lt;/code&gt;.">i</button></div>
-                        <input id="ctrl-color" type="text" placeholder="theme default">
-                    </div>
-                    <div class="ctrl">
-                        <div class="ctrl-head"><label for="ctrl-inactive">inactive_color</label><button type="button" class="info" data-ref="inactive_color" data-help="Color of the empty (non-member) matrix dots. Overrides the theme. Any CSS color.">i</button></div>
-                        <input id="ctrl-inactive" type="text" placeholder="theme default">
-                    </div>
-                    <div class="ctrl">
-                        <div class="ctrl-head"><label for="ctrl-title">title</label><button type="button" class="info" data-ref="title" data-help="Optional title shown at the top-left of the figure.">i</button></div>
-                        <input id="ctrl-title" type="text" placeholder="none">
+                    <div class="deck-grid">
+                        <div class="ctrl">
+                            <div class="ctrl-head"><label for="ctrl-theme">theme</label><button type="button" class="info" data-ref="theme" data-help="Light, dark, or auto, plus colorblind-safe palettes (Okabe-Ito, ColorBrewer, Paul Tol). A palette colors each set.">i</button></div>
+                            <select id="ctrl-theme">
+                                <option value="light" selected>light</option>
+                                <option value="dark">dark</option>
+                                <option value="auto">auto</option>
+                                <option value="okabe-ito-light">okabe-ito-light</option>
+                                <option value="okabe-ito-dark">okabe-ito-dark</option>
+                                <option value="colorbrewer-light">colorbrewer-light</option>
+                                <option value="colorbrewer-dark">colorbrewer-dark</option>
+                                <option value="tol-light">tol-light</option>
+                                <option value="tol-dark">tol-dark</option>
+                            </select>
+                        </div>
+                        <div class="ctrl">
+                            <div class="ctrl-head"><label for="ctrl-title">title</label><button type="button" class="info" data-ref="title" data-help="Optional title shown at the top-left of the figure.">i</button></div>
+                            <input id="ctrl-title" type="text" placeholder="none">
+                        </div>
+                        <div class="ctrl">
+                            <div class="ctrl-head"><label for="ctrl-color">color</label><button type="button" class="info" data-ref="color" data-help="Color of the bars, active dots, and connectors. Overrides the theme ink / palette. Any CSS color; blank keeps the theme.">i</button></div>
+                            <input id="ctrl-color" type="text" placeholder="theme default">
+                        </div>
+                        <div class="ctrl">
+                            <div class="ctrl-head"><label for="ctrl-inactive-on" class="ctrl-inline" style="text-transform:uppercase;letter-spacing:0.03em;font-size:0.7rem;font-weight:600;color:var(--color-text-muted);"><input id="ctrl-inactive-on" type="checkbox"> inactive_color</label><button type="button" class="info" data-ref="inactive_color" data-help="Color of the empty (non-member) matrix dots. Tick to override the theme default, then pick a color.">i</button></div>
+                            <input id="ctrl-inactive" type="color" value="#d8d7d1" disabled>
+                        </div>
                     </div>
                 </div>
                 <div class="control-card">
                     <h4 class="card-title">Axis labels</h4>
-                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-show-inttitle" type="checkbox" checked> intersection title</label><button type="button" class="info" data-ref="intersection_title" data-help="Toggle the intersection-size axis title. Uncheck to hide it; leave the field blank for the automatic label, or type to override.">i</button></div>
-                    <input id="ctrl-inttitle" type="text" placeholder="auto">
-                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-show-settitle" type="checkbox" checked> set-size title</label><button type="button" class="info" data-ref="set_size_title" data-help="Toggle the set-size axis title. Uncheck to hide it; blank for &quot;Set size&quot;, or type to override.">i</button></div>
-                    <input id="ctrl-settitle" type="text" placeholder="auto">
-                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-intticks" type="checkbox" checked> show_intersection_ticks</label><button type="button" class="info" data-ref="show_intersection_ticks" data-help="Show the numeric tick labels on the intersection-size axis.">i</button></div>
-                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-setticks" type="checkbox" checked> show_set_size_ticks</label><button type="button" class="info" data-ref="show_set_size_ticks" data-help="Show the numeric tick labels on the set-size axis.">i</button></div>
+                    <div class="deck-grid">
+                        <div class="ctrl">
+                            <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-show-inttitle" type="checkbox" checked> intersection title</label><button type="button" class="info" data-ref="intersection_title" data-help="Toggle the intersection-size axis title. Uncheck to hide it; leave the field blank for the automatic label, or type to override.">i</button></div>
+                            <input id="ctrl-inttitle" type="text" placeholder="auto">
+                        </div>
+                        <div class="ctrl">
+                            <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-show-settitle" type="checkbox" checked> set-size title</label><button type="button" class="info" data-ref="set_size_title" data-help="Toggle the set-size axis title. Uncheck to hide it; blank for &quot;Set size&quot;, or type to override.">i</button></div>
+                            <input id="ctrl-settitle" type="text" placeholder="auto">
+                        </div>
+                        <div class="toggle-row full"><label class="ctrl-inline"><input id="ctrl-intticks" type="checkbox" checked> show_intersection_ticks</label><button type="button" class="info" data-ref="show_intersection_ticks" data-help="Show the numeric tick labels on the intersection-size axis.">i</button></div>
+                        <div class="toggle-row full"><label class="ctrl-inline"><input id="ctrl-setticks" type="checkbox" checked> show_set_size_ticks</label><button type="button" class="info" data-ref="show_set_size_ticks" data-help="Show the numeric tick labels on the set-size axis.">i</button></div>
+                    </div>
                 </div>
                 <div class="control-card">
                     <h4 class="card-title">Selection</h4>
-                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-highlight" type="checkbox" checked> highlight_selection</label><button type="button" class="info" data-ref="highlight_selection" data-help="A component property: clicking recolors the selected marks (the intersection's bar + its dots, or the set's bar + its dots) to selection_color. Click a bar or dot below to try it.">i</button></div>
+                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-highlight" type="checkbox" checked> highlight_selection</label><button type="button" class="info" data-ref="highlight_selection" data-help="A component property: clicking recolors the selected marks (the intersection's bar + its dots, or the set's bar + its dots) to selection_color. Click a bar or dot to try it.">i</button></div>
                     <div class="ctrl">
-                        <div class="ctrl-head"><label for="ctrl-selcolor">selection_color</label><button type="button" class="info" data-ref="selection_color" data-help="A component property: the color applied to the selected marks when highlight_selection is on. Any CSS color.">i</button></div>
-                        <input id="ctrl-selcolor" type="text" value="#d55e00">
+                        <div class="ctrl-head"><label for="ctrl-selcolor">selection_color</label><button type="button" class="info" data-ref="selection_color" data-help="A component property: the color applied to the selected marks when highlight_selection is on.">i</button></div>
+                        <input id="ctrl-selcolor" type="color" value="#d55e00">
                     </div>
                 </div>
-            </aside>
+            </div>
         </div>
     </div>
 </section>
@@ -357,9 +412,9 @@
 <script src="https://cdn.plot.ly/plotly-3.7.0.min.js" charset="utf-8"></script>
 <script src="./assets/nav.js?v=7"></script>
 <script src="./assets/install.js?v=2"></script>
-<script src="./assets/upset.js?v=3"></script>
+<script src="./assets/upset.js?v=4"></script>
 <script src="./data/examples.js?v=1"></script>
-<script src="./assets/explorer.js?v=6"></script>
+<script src="./assets/explorer.js?v=7"></script>
 <script>
     // Canvas tab switcher (Preview / Code / Install).
     (function () {
@@ -380,14 +435,15 @@
                 });
                 if (target === "preview" && window.Plotly) {
                     var root = document.getElementById("upset-root");
-                    if (root) window.Plotly.Plots.resize(root);
+                    if (root && root.classList.contains("js-plotly-plot")) window.Plotly.Plots.resize(root);
                 }
             });
         });
     })();
 
-    // Info-icon popover: click an (i) to show concise help + a link to the
-    // matching Reference section. Click anywhere else (or Escape) to close.
+    // Info-icon popover: concise help + a link to the matching Reference
+    // section. Fixed-positioned (the desktop page doesn't scroll); flips above
+    // the trigger when it would overflow the bottom.
     (function () {
         var pop = document.getElementById("info-pop");
         function close() { pop.classList.add("hidden"); }
@@ -401,11 +457,13 @@
             pop.innerHTML = help + link;
             pop.classList.remove("hidden");
             var r = trigger.getBoundingClientRect();
-            var top = r.bottom + window.scrollY + 6;
-            var left = r.left + window.scrollX - 6;
-            var maxLeft = window.scrollX + document.documentElement.clientWidth - pop.offsetWidth - 12;
+            var vw = document.documentElement.clientWidth;
+            var vh = document.documentElement.clientHeight;
+            var left = Math.max(8, Math.min(r.left - 6, vw - pop.offsetWidth - 12));
+            var below = r.bottom + 6;
+            var top = below + pop.offsetHeight > vh - 8 ? Math.max(8, r.top - pop.offsetHeight - 6) : below;
+            pop.style.left = left + "px";
             pop.style.top = top + "px";
-            pop.style.left = Math.max(window.scrollX + 8, Math.min(left, maxLeft)) + "px";
         });
         document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
         window.addEventListener("resize", close);
