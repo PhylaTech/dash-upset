@@ -56,7 +56,7 @@
         <div class="ex-section">
             <h3>Python</h3>
             <p style="color: var(--color-text-muted); font-size: 0.92rem;">
-                Build the model with <code>from_counts</code> and render it with <code>create_upset</code>. Try the
+                Drop the <code>UpSet</code> component into your layout (or use <code>create_upset</code> for a bare figure). Try the
                 <a href="./explorer.html">Component Explorer</a> to tune sorting and filtering live.
             </p>
             <div class="snippet"><pre id="ex-snippet"><code></code></pre></div>
@@ -104,12 +104,12 @@
         var counts = ex.counts || {};
         var lines = Object.keys(counts).map(function (k) { return '        "' + k + '": ' + counts[k]; });
         document.querySelector("#ex-snippet code").textContent =
-            "from dash import Dash, dcc\n" +
-            "from dash_upset import create_upset, from_counts\n\n" +
-            "fig = create_upset(\n    from_counts({\n" + lines.join(",\n") + ",\n    }),\n" +
-            '    title="' + ex.title + '",\n)\n\n' +
+            "from dash import Dash\n" +
+            "from dash_upset import UpSet, from_counts\n\n" +
             "app = Dash(__name__)\n" +
-            "app.layout = dcc.Graph(figure=fig)\n\n" +
+            'app.layout = UpSet(\n    id="' + ex.id + '",\n    data=from_counts({\n' +
+            lines.join(",\n") + ",\n    }),\n" +
+            '    title="' + ex.title + '",\n)\n\n' +
             'if __name__ == "__main__":\n    app.run(debug=True)\n';
 
         // Plot with mode toggle
