@@ -123,8 +123,25 @@ def test_percentages_in_hover_data(sample):
 
 
 def test_rejects_non_model_input():
-    with pytest.raises(TypeError, match="from_memberships"):
-        create_upset({"A": 1})
+    with pytest.raises((TypeError, ValueError)):
+        create_upset(123)
+
+
+def test_accepts_dataframe_with_sets():
+    import pandas as pd
+
+    df = pd.DataFrame({"A": [1, 1, 0], "B": [1, 0, 1], "note": ["x", "y", "z"]})
+    fig = create_upset(df, sets=["A", "B"])
+    names = {row[0] for row in trace(fig, "upset:set-bars").customdata}
+    assert names == {"A", "B"}  # the "note" column is ignored
+
+
+def test_accepts_polars_dataframe():
+    import polars as pl
+
+    df = pl.DataFrame({"A": [True, True, False], "B": [True, False, True]})
+    fig = create_upset(df, sets=["A", "B"])
+    assert {row[0] for row in trace(fig, "upset:set-bars").customdata} == {"A", "B"}
 
 
 def test_rejects_empty_model():

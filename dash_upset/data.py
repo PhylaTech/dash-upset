@@ -314,6 +314,7 @@ def _frame_indicator_columns(indicators: IntoDataFrame) -> tuple[dict[str, list[
 def from_indicators(
     indicators: IntoDataFrame | Mapping[str, Sequence[bool]],
     element_ids: Sequence[Hashable] | None = None,
+    sets: Sequence[str] | None = None,
 ) -> UpSetData:
     """Build the model from a boolean indicator table (rows = elements).
 
@@ -325,10 +326,27 @@ def from_indicators(
         element_ids: Optional ids for the elements (rows), same length as the
             table. When omitted, a pandas-style index provides the ids if the
             input carries one; otherwise ids are positional indices.
+        sets: Optional subset of columns to treat as sets, in the given order.
+            When provided, only these columns are used (others -- id or
+            attribute columns -- are ignored); the columns must all exist and
+            be boolean/0-1. When omitted, every column is a set.
 
     Example:
         >>> from_indicators({"A": [True, False], "B": [True, True]})  # doctest: +SKIP
     """
+    if sets is not None:
+        sets = list(sets)
+        if isinstance(indicators, Mapping):
+            missing = [name for name in sets if name not in indicators]
+            if missing:
+                raise ValueError(f"sets not found in indicators: {missing!r}")
+            indicators = {name: indicators[name] for name in sets}
+        else:
+            frame = nw.from_native(indicators, eager_only=True)
+            missing = [name for name in sets if name not in frame.columns]
+            if missing:
+                raise ValueError(f"sets not found in indicators columns: {missing!r}")
+            indicators = frame.select(sets).to_native()
     index_ids = None
     if isinstance(indicators, Mapping):
         columns, n_rows = _mapping_indicator_columns(indicators)

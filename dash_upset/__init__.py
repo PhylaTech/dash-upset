@@ -4,18 +4,32 @@ UpSet plots visualize the intersections of many sets, where Venn diagrams break
 down past three or four sets. See https://upset.app for the technique and
 ``ROADMAP.md`` in this repository for the design plan.
 
-The M1 API builds a data model with one of the ``from_*`` constructors and
-renders it with :func:`create_upset`::
+Two entry points, mirroring the Plotly/Dash split:
 
-    from dash_upset import create_upset, from_counts
+- ``UpSet`` -- a self-wiring Dash component (PascalCase, like ``dcc.Graph`` /
+  ``SeqViz``) that goes in a layout and exposes click selection to callbacks::
 
-    fig = create_upset(from_counts({"A": 10, "B": 4, "A&B": 6}))
-    fig.show()  # or dcc.Graph(figure=fig) inside a Dash layout
+      from dash import Dash
+      from dash_upset import UpSet
 
-The self-wiring ``UpSet(...)`` Dash component (click selection, callback
-outputs) arrives in M2; see the roadmap.
+      app = Dash(__name__)
+      app.layout = UpSet(id="genes", data=df, sets=["A", "B", "C"])
+
+- ``create_upset`` -- the figure factory beneath it (lowercase, like
+  ``plotly.figure_factory.create_*``), returning a ``go.Figure`` for notebooks,
+  static export, or ``dcc.Graph``::
+
+      from dash_upset import create_upset
+
+      fig = create_upset(df, sets=["A", "B", "C"])
+      fig.show()
+
+Both take a dataframe of boolean indicator columns directly (the Plotly-style
+input); the ``from_*`` constructors remain for pre-aggregated counts, set
+contents, or per-element memberships.
 """
 
+from .component import UpSet
 from .data import (
     UpSetData,
     UpSetIntersection,
@@ -29,6 +43,7 @@ from .figure import create_upset
 __version__ = "0.1.0"
 
 __all__ = [
+    "UpSet",
     "UpSetData",
     "UpSetIntersection",
     "create_upset",
