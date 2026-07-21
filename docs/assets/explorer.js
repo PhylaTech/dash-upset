@@ -34,10 +34,20 @@
         color: document.getElementById("ctrl-color"),
         inactive: document.getElementById("ctrl-inactive"),
         title: document.getElementById("ctrl-title"),
+        showIntTitle: document.getElementById("ctrl-show-inttitle"),
+        intTitle: document.getElementById("ctrl-inttitle"),
+        showSetTitle: document.getElementById("ctrl-show-settitle"),
+        setTitle: document.getElementById("ctrl-settitle"),
+        intTicks: document.getElementById("ctrl-intticks"),
+        setTicks: document.getElementById("ctrl-setticks"),
+        highlight: document.getElementById("ctrl-highlight"),
+        selColor: document.getElementById("ctrl-selcolor"),
         snippet: document.querySelector("#live-snippet code"),
         roIntersection: document.getElementById("ro-intersection"),
         roSets: document.getElementById("ro-sets"),
     };
+
+    var baseColors = {};
 
     datasets.forEach(function (d, i) {
         var opt = document.createElement("option");
@@ -78,6 +88,15 @@
             color: str(el.color),
             inactiveColor: str(el.inactive),
             title: str(el.title),
+            // Axis titles: unchecked -> hide (null); checked + blank -> auto
+            // (undefined); checked + text -> override.
+            intersectionTitle: !el.showIntTitle.checked ? null : (str(el.intTitle) || undefined),
+            setSizeTitle: !el.showSetTitle.checked ? null : (str(el.setTitle) || undefined),
+            showIntersectionTicks: el.intTicks.checked,
+            showSetSizeTicks: el.setTicks.checked,
+            // Component (interaction) props, not figure args:
+            highlightSelection: el.highlight.checked,
+            selectionColor: str(el.selColor) || "#9c5a3c",
             height: 460,
         };
     }
@@ -103,6 +122,14 @@
         if (opts.color) args.push('color="' + opts.color + '"');
         if (opts.inactiveColor) args.push('inactive_color="' + opts.inactiveColor + '"');
         if (opts.title) args.push('title="' + opts.title + '"');
+        if (opts.intersectionTitle === null) args.push("intersection_title=None");
+        else if (opts.intersectionTitle) args.push('intersection_title="' + opts.intersectionTitle + '"');
+        if (opts.setSizeTitle === null) args.push("set_size_title=None");
+        else if (opts.setSizeTitle) args.push('set_size_title="' + opts.setSizeTitle + '"');
+        if (!opts.showIntersectionTicks) args.push("show_intersection_ticks=False");
+        if (!opts.showSetSizeTicks) args.push("show_set_size_ticks=False");
+        if (!opts.highlightSelection) args.push("highlight_selection=False");
+        if (opts.selectionColor !== "#9c5a3c") args.push('selection_color="' + opts.selectionColor + '"');
 
         var argText = args.map(function (a) { return "    " + a + ","; }).join("\n");
         return (
@@ -127,7 +154,8 @@
     }
 
     // Selection: mirror the compiled component. A click on a bar/dot updates
-    // the property readout, just as it would drive a Dash callback.
+    // the property readout (as it would drive a Dash callback) and, when
+    // highlight_selection is on, recolors the selected marks.
     function onClick(data) {
         var point = data && data.points && data.points[0];
         var sel = window.DashUpset.selectionFromClick(point);
@@ -136,6 +164,10 @@
             el.roIntersection.textContent = JSON.stringify(sel.value);
         } else if (sel.prop === "selected_sets") {
             el.roSets.textContent = JSON.stringify(sel.value);
+        }
+        if (el.highlight.checked && sel.target) {
+            var color = (el.selColor.value || "").trim() || "#9c5a3c";
+            window.DashUpset.applyHighlight(root, baseColors, sel.target, color);
         }
     }
 
@@ -151,6 +183,8 @@
                 "No subsets match these filters. Loosen a filter to see the plot.</p>";
         } else {
             window.Plotly.react(root, fig.data, fig.layout, fig.config);
+            // Snapshot the base colors so click-highlight paints over them.
+            baseColors = window.DashUpset.baseColorsOf(fig);
             // Rebind after every (re)render: Plotly.purge on the no-subsets
             // path drops handlers, so re-attach fresh and de-dupe.
             if (root.removeAllListeners) root.removeAllListeners("plotly_click");
