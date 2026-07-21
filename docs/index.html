@@ -122,36 +122,49 @@
 <section id="quickstart">
     <div class="container">
         <h2>Quick start</h2>
-        <p class="section-lead">Build a data model with one of the <code>from_*</code> constructors, then render it with <code>create_upset</code>. The result is a plain Plotly figure.</p>
+        <p class="section-lead">Drop the <code>UpSet</code> component into a Dash layout and hand it a dataframe with one boolean column per set. Clicks are exposed to your callbacks &mdash; no wiring.</p>
         <div class="snippet">
-<pre><code>from dash import Dash, dcc
-from dash_upset import create_upset, from_counts
+<pre><code>import pandas as pd
+from dash import Dash
+from dash_upset import UpSet
 
-fig = create_upset(
-    from_counts({
-        "Action": 320, "Comedy": 290, "Drama": 410,
-        "Action&amp;Comedy": 84, "Action&amp;Drama": 120, "Comedy&amp;Drama": 96,
-        "Action&amp;Comedy&amp;Drama": 40,
-    }),
-    title="Movie genres",
-    sort_by="cardinality",   # or "degree", "deviation"
-    mode="distinct",         # or "intersect", "union"
+df = pd.DataFrame(
+    {
+        "Action": [1, 1, 0, 1],
+        "Comedy": [1, 0, 1, 1],
+        "Drama": [0, 1, 1, 1],
+    }
 )
 
 app = Dash(__name__)
-app.layout = dcc.Graph(figure=fig)
+app.layout = UpSet(
+    id="movies",
+    data=df,
+    sets=["Action", "Comedy", "Drama"],
+    sort_by="cardinality",  # or "degree", "deviation"
+    mode="distinct",  # or "intersect", "union"
+    theme="auto",  # follows the page (light / dark)
+)
 
 if __name__ == "__main__":
     app.run(debug=True)</code></pre>
         </div>
-        <h3 style="margin-top: 24px;">Element-level data</h3>
-        <p class="section-lead">The familiar <a href="https://upsetplot.readthedocs.io" target="_blank" rel="noopener">upsetplot</a> conventions, reimplemented and dataframe-agnostic via <a href="https://github.com/narwhals-dev/narwhals" target="_blank" rel="noopener">narwhals</a> (pandas, Polars, PyArrow, and more):</p>
+        <h3 style="margin-top: 24px;">Just the figure</h3>
+        <p class="section-lead">Need a plain Plotly figure for a notebook, static export, or your own <code>dcc.Graph</code>? <code>create_upset</code> takes the same input and returns a <code>go.Figure</code>.</p>
         <div class="snippet">
-<pre><code>from dash_upset import from_memberships, from_contents, from_indicators
+<pre><code>from dash_upset import create_upset
 
-from_memberships([("A",), ("A", "B"), ()])          # per-element set names
-from_contents({"A": ["x", "y"], "B": ["y", "z"]})   # per-set element ids
-from_indicators(boolean_dataframe)                  # rows = elements, columns = sets</code></pre>
+fig = create_upset(df, sets=["Action", "Comedy", "Drama"], title="Movie genres")
+fig.show()  # or dcc.Graph(figure=fig); export to PNG/SVG/PDF via kaleido</code></pre>
+        </div>
+        <h3 style="margin-top: 24px;">Other input shapes</h3>
+        <p class="section-lead">Pre-aggregated counts, per-set contents, or per-element memberships &mdash; the familiar <a href="https://upsetplot.readthedocs.io" target="_blank" rel="noopener">upsetplot</a> conventions, reimplemented and dataframe-agnostic via <a href="https://github.com/narwhals-dev/narwhals" target="_blank" rel="noopener">narwhals</a>. Pass any of these as <code>data=</code>.</p>
+        <div class="snippet">
+<pre><code>from dash_upset import from_counts, from_memberships, from_contents
+
+from_counts({"Action": 320, "Action&amp;Comedy": 84})  # pre-aggregated sizes
+from_memberships([("A",), ("A", "B"), ()])           # per-element set names
+from_contents({"A": ["x", "y"], "B": ["y", "z"]})    # per-set element ids</code></pre>
         </div>
     </div>
 </section>

@@ -89,16 +89,16 @@
 
         var argText = args.map(function (a) { return "    " + a + ","; }).join("\n");
         return (
-            "from dash import Dash, dcc\n" +
-            "from dash_upset import create_upset, from_counts\n\n" +
-            "fig = create_upset(\n" +
-            "    from_counts({\n" +
+            "from dash import Dash\n" +
+            "from dash_upset import UpSet, from_counts\n\n" +
+            "app = Dash(__name__)\n" +
+            "app.layout = UpSet(\n" +
+            '    id="upset",\n' +
+            "    data=from_counts({\n" +
             lines.join(",\n") + ",\n" +
             "    }),\n" +
             argText + "\n" +
             ")\n\n" +
-            "app = Dash(__name__)\n" +
-            "app.layout = dcc.Graph(figure=fig)\n\n" +
             'if __name__ == "__main__":\n' +
             "    app.run(debug=True)\n"
         );
