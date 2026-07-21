@@ -9,7 +9,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
-    <link rel="icon" href="./assets/logo-mark.svg" type="image/svg+xml">
+    <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="./assets/favicon-32x32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="./assets/favicon-16x16.png" sizes="16x16" type="image/png">
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+    <link rel="manifest" href="./assets/site.webmanifest">
     <link rel="stylesheet" href="./assets/site.css?v=5">
     <style>
         /* Reference-page layout: sticky sidebar + prose prop cards. */
@@ -70,6 +74,8 @@
                 <li><a href="#UpSet">UpSet</a></li>
                 <li><a href="#selected_intersection">selected_intersection</a></li>
                 <li><a href="#selected_sets">selected_sets</a></li>
+                <li><a href="#highlight_selection">highlight_selection</a></li>
+                <li><a href="#selection_color">selection_color</a></li>
             </ul>
             <h4>create_upset</h4>
             <ul>
@@ -90,6 +96,10 @@
                 <li><a href="#color">color</a></li>
                 <li><a href="#inactive_color">inactive_color</a></li>
                 <li><a href="#title">title</a></li>
+                <li><a href="#intersection_title">intersection_title</a></li>
+                <li><a href="#set_size_title">set_size_title</a></li>
+                <li><a href="#show_intersection_ticks">show_intersection_ticks</a></li>
+                <li><a href="#show_set_size_ticks">show_set_size_ticks</a></li>
                 <li><a href="#size">width / height</a></li>
                 <li><a href="#template">template</a></li>
             </ul>
@@ -147,6 +157,20 @@ def show(selection):
                     <div class="prop-head"><h3>selected_sets<a class="anchor" href="#selected_sets">#</a></h3><span class="pill type">list[str]</span><span class="pill default">[]</span></div>
                     <div class="prop-body">
                         <p>Set when a set-size bar is clicked: a list of set names. Read it with <code>Input("genes", "selected_sets")</code>.</p>
+                    </div>
+                </article>
+
+                <article class="prop" id="highlight_selection">
+                    <div class="prop-head"><h3>highlight_selection<a class="anchor" href="#highlight_selection">#</a></h3><span class="pill type">bool</span><span class="pill default">True</span></div>
+                    <div class="prop-body">
+                        <p>When on, clicking recolors the selected marks to <code>selection_color</code> as a visible cue: the clicked intersection's bar and its member dots, or the clicked set's bar and its dots. Set <code>False</code> to leave the plot unchanged on click (the selection is still reported to callbacks).</p>
+                    </div>
+                </article>
+
+                <article class="prop" id="selection_color">
+                    <div class="prop-head"><h3>selection_color<a class="anchor" href="#selection_color">#</a></h3><span class="pill type">str</span><span class="pill default">"#9c5a3c"</span></div>
+                    <div class="prop-body">
+                        <p>The color painted on the selected marks when <code>highlight_selection</code> is on. Any CSS color.</p>
                     </div>
                 </article>
             </section>
@@ -247,6 +271,26 @@ def show(selection):
                 <article class="prop" id="title">
                     <div class="prop-head"><h3>title<a class="anchor" href="#title">#</a></h3><span class="pill type">str | None</span><span class="pill default">None</span></div>
                     <div class="prop-body"><p>Optional figure title, drawn top-left.</p></div>
+                </article>
+
+                <article class="prop" id="intersection_title">
+                    <div class="prop-head"><h3>intersection_title<a class="anchor" href="#intersection_title">#</a></h3><span class="pill type">str | None</span><span class="pill default">auto</span></div>
+                    <div class="prop-body"><p>Title of the intersection-size axis. Omit for the automatic label (<code>"Intersection size"</code>, or the mode-specific variant); pass a string to override it, or <code>None</code> to hide it.</p></div>
+                </article>
+
+                <article class="prop" id="set_size_title">
+                    <div class="prop-head"><h3>set_size_title<a class="anchor" href="#set_size_title">#</a></h3><span class="pill type">str | None</span><span class="pill default">auto</span></div>
+                    <div class="prop-body"><p>Title of the set-size axis. Omit for <code>"Set size"</code>; pass a string to override, or <code>None</code> to hide it.</p></div>
+                </article>
+
+                <article class="prop" id="show_intersection_ticks">
+                    <div class="prop-head"><h3>show_intersection_ticks<a class="anchor" href="#show_intersection_ticks">#</a></h3><span class="pill type">bool</span><span class="pill default">True</span></div>
+                    <div class="prop-body"><p>Show the numeric tick labels on the intersection-size axis.</p></div>
+                </article>
+
+                <article class="prop" id="show_set_size_ticks">
+                    <div class="prop-head"><h3>show_set_size_ticks<a class="anchor" href="#show_set_size_ticks">#</a></h3><span class="pill type">bool</span><span class="pill default">True</span></div>
+                    <div class="prop-body"><p>Show the numeric tick labels on the set-size axis.</p></div>
                 </article>
 
                 <article class="prop" id="size">

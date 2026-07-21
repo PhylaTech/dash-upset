@@ -197,6 +197,13 @@
         model.setNames.forEach(function (n, i) { sizeOfSet[n] = model.setSizes[i]; });
         var rowOfSet = {};
         setOrder.forEach(function (n, r) { rowOfSet[n] = r; });
+
+        // Per-set colors: a palette colorway colors each set (its bar + dots);
+        // plain light/dark stays ink. Explicit color= wins. Mirror of figure.py.
+        var colorway = th.colorway;
+        var setColors = setOrder.map(function (_, i) {
+            return (!opts.color && colorway) ? colorway[i % colorway.length] : ink;
+        });
         var nSets = setOrder.length;
         var nInt = subsets.length;
         var total = model.total;
@@ -241,7 +248,7 @@
             y: setOrder.map(function (_, r) { return r; }),
             x: setOrder.map(function (n) { return sizeOfSet[n]; }),
             width: 0.6,
-            marker: { color: ink, cornerradius: 4, line: { width: 0 } },
+            marker: { color: setColors, cornerradius: 4, line: { width: 0 } },
             customdata: setOrder.map(function (n) { return [n, percent(sizeOfSet[n], total)]; }),
             hovertemplate: "<b>%{customdata[0]}</b><br>Size: %{x:,} (%{customdata[1]}% of total)<extra></extra>",
             xaxis: "x2", yaxis: "y2",
@@ -272,18 +279,19 @@
             });
         }
 
-        // Active member dots
-        var dotX = [], dotY = [], dotCd = [];
+        // Active member dots (each colored by its set)
+        var dotX = [], dotY = [], dotCd = [], dotColors = [];
         subsets.forEach(function (e, c) {
             e.sets.forEach(function (n) {
                 dotX.push(c); dotY.push(rowOfSet[n]);
+                dotColors.push(setColors[rowOfSet[n]]);
                 dotCd.push([n, labelOf(e.sets) + " (" + e.size.toLocaleString() + ")"]);
             });
         });
         if (dotX.length) {
             traces.push({
                 type: "scatter", mode: "markers", meta: "upset:matrix-dots", x: dotX, y: dotY, customdata: dotCd,
-                marker: { color: ink, size: dotPx },
+                marker: { color: dotColors, size: dotPx },
                 hovertemplate: "<b>%{customdata[0]}</b><br>%{customdata[1]}<extra></extra>",
                 xaxis: "x3", yaxis: "y3",
             });
@@ -300,6 +308,13 @@
             });
         }
 
+        // Axis titles: undefined -> automatic; a string overrides; null/"" hides.
+        var intersectionTitle = opts.intersectionTitle === undefined ? modeTitle : opts.intersectionTitle;
+        var setSizeTitle = opts.setSizeTitle === undefined ? "Set size" : opts.setSizeTitle;
+        var showIntTicks = opts.showIntersectionTicks !== false;
+        var showSetTicks = opts.showSetSizeTicks !== false;
+        var titleFont = { size: 12, color: th.secondary };
+
         var hasTitle = !!opts.title;
         var layout = {
             showlegend: false,
@@ -313,8 +328,8 @@
             bargap: 0.3,
             shapes: shapes,
             xaxis: { domain: [0.26, 1], anchor: "y", range: colRange, showticklabels: false, ticks: "", showgrid: false, zeroline: false },
-            yaxis: { domain: [0.63, 1], anchor: "x", range: [0, maxSize > 0 ? maxSize * headroom : 1], title: { text: modeTitle, font: { size: 12, color: th.secondary }, standoff: 8 }, tickfont: { size: 11, color: th.muted }, gridcolor: th.grid, zeroline: true, zerolinecolor: th.baseline, nticks: 5, automargin: true },
-            xaxis2: { domain: [0, 0.23], anchor: "y2", autorange: "reversed", title: { text: "Set size", font: { size: 12, color: th.secondary }, standoff: 8 }, tickfont: { size: 11, color: th.muted }, gridcolor: th.grid, zeroline: false, nticks: 3, automargin: true },
+            yaxis: { domain: [0.63, 1], anchor: "x", range: [0, maxSize > 0 ? maxSize * headroom : 1], title: intersectionTitle ? { text: intersectionTitle, font: titleFont, standoff: 8 } : undefined, showticklabels: showIntTicks, tickfont: { size: 11, color: th.muted }, gridcolor: th.grid, zeroline: true, zerolinecolor: th.baseline, nticks: 5, automargin: true },
+            xaxis2: { domain: [0, 0.23], anchor: "y2", autorange: "reversed", title: setSizeTitle ? { text: setSizeTitle, font: titleFont, standoff: 8 } : undefined, showticklabels: showSetTicks, tickfont: { size: 11, color: th.muted }, gridcolor: th.grid, zeroline: false, nticks: 3, automargin: true },
             yaxis2: { domain: [0, 0.57], anchor: "x2", range: rowRange, tickvals: setOrder.map(function (_, r) { return r; }), ticktext: setOrder, tickfont: { size: 12, color: th.secondary }, ticks: "", showgrid: false, zeroline: false, automargin: true },
             xaxis3: { domain: [0.26, 1], anchor: "y3", matches: "x", range: colRange, showticklabels: false, ticks: "", showgrid: false, zeroline: false },
             yaxis3: { domain: [0, 0.57], anchor: "x3", matches: "y2", range: rowRange, showticklabels: false, ticks: "", showgrid: false, zeroline: false },
@@ -328,6 +343,7 @@
 
     // Map a plotly click event to the component's selection properties, exactly
     // as the compiled DashUpset React component does (keyed on trace meta).
+    // Also returns `target` (which marks to highlight) for applyHighlight.
     function selectionFromClick(point) {
         if (!point) return null;
         var meta = point.data && point.data.meta;
@@ -337,20 +353,81 @@
         }
         if (meta === "upset:intersection-bars") {
             var label = cd.length ? cd[0] : null;
-            return { prop: "selected_intersection", value: { label: label, sets: setsFromLabel(label), size: point.y } };
+            return {
+                prop: "selected_intersection",
+                value: { label: label, sets: setsFromLabel(label), size: point.y },
+                target: { type: "intersection", column: point.pointNumber },
+            };
         }
         if (meta === "upset:matrix-dots") {
             var raw = cd.length > 1 ? cd[1] : null;
             var cut = typeof raw === "string" ? raw.lastIndexOf(" (") : -1;
             var lbl = cut >= 0 ? raw.slice(0, cut) : raw;
-            return { prop: "selected_intersection", value: { label: lbl, sets: setsFromLabel(lbl) } };
+            return {
+                prop: "selected_intersection",
+                value: { label: lbl, sets: setsFromLabel(lbl) },
+                target: { type: "intersection", column: point.x },
+            };
         }
         if (meta === "upset:set-bars") {
             var name = cd.length ? cd[0] : null;
-            return name ? { prop: "selected_sets", value: [name] } : null;
+            return name
+                ? { prop: "selected_sets", value: [name], target: { type: "sets", row: point.pointNumber } }
+                : null;
         }
         return null;
     }
 
-    global.DashUpset = { buildFigure: buildFigure, selectionFromClick: selectionFromClick };
+    // Recolor the selected marks over base colors (a {meta: colorOrArray} map
+    // captured at render). Mirrors the compiled component's highlight.
+    function applyHighlight(gd, baseColors, target, color) {
+        if (!gd || !gd.data || !global.Plotly) return;
+        function idx(meta) { return gd.data.findIndex(function (t) { return t.meta === meta; }); }
+        function arr(c, n) {
+            if (Array.isArray(c)) return c.slice();
+            var out = []; for (var i = 0; i < n; i++) out.push(c); return out;
+        }
+        var bi = idx("upset:intersection-bars");
+        if (bi >= 0) {
+            var c1 = arr(baseColors["upset:intersection-bars"], gd.data[bi].y.length);
+            if (target && target.type === "intersection" && target.column != null) c1[target.column] = color;
+            global.Plotly.restyle(gd, { "marker.color": [c1] }, [bi]);
+        }
+        var si = idx("upset:set-bars");
+        if (si >= 0) {
+            var c2 = arr(baseColors["upset:set-bars"], gd.data[si].y.length);
+            if (target && target.type === "sets" && target.row != null) c2[target.row] = color;
+            global.Plotly.restyle(gd, { "marker.color": [c2] }, [si]);
+        }
+        var di = idx("upset:matrix-dots");
+        if (di >= 0) {
+            var xs = gd.data[di].x, ys = gd.data[di].y;
+            var c3 = arr(baseColors["upset:matrix-dots"], xs.length);
+            for (var i = 0; i < xs.length; i++) {
+                var hitCol = target && target.type === "intersection" && xs[i] === target.column;
+                var hitRow = target && target.type === "sets" && ys[i] === target.row;
+                if (hitCol || hitRow) c3[i] = color;
+            }
+            global.Plotly.restyle(gd, { "marker.color": [c3] }, [di]);
+        }
+    }
+
+    // Snapshot the base marker colors for the highlightable traces.
+    function baseColorsOf(figure) {
+        var map = {};
+        (figure.data || []).forEach(function (t) {
+            if (t.meta === "upset:intersection-bars" || t.meta === "upset:set-bars" || t.meta === "upset:matrix-dots") {
+                var c = t.marker && t.marker.color;
+                map[t.meta] = Array.isArray(c) ? c.slice() : c;
+            }
+        });
+        return map;
+    }
+
+    global.DashUpset = {
+        buildFigure: buildFigure,
+        selectionFromClick: selectionFromClick,
+        applyHighlight: applyHighlight,
+        baseColorsOf: baseColorsOf,
+    };
 })(window);

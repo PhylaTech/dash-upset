@@ -9,7 +9,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
-    <link rel="icon" href="./assets/logo-mark.svg" type="image/svg+xml">
+    <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="./assets/favicon-32x32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="./assets/favicon-16x16.png" sizes="16x16" type="image/png">
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+    <link rel="manifest" href="./assets/site.webmanifest">
     <link rel="stylesheet" href="./assets/site.css?v=5">
     <style>
         /* ============================================================
@@ -318,6 +322,23 @@
                         <input id="ctrl-title" type="text" placeholder="none">
                     </div>
                 </div>
+                <div class="control-card">
+                    <h4 class="card-title">Axis labels</h4>
+                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-show-inttitle" type="checkbox" checked> intersection title</label><button type="button" class="info" data-ref="intersection_title" data-help="Toggle the intersection-size axis title. Uncheck to hide it; leave the field blank for the automatic label, or type to override.">i</button></div>
+                    <input id="ctrl-inttitle" type="text" placeholder="auto">
+                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-show-settitle" type="checkbox" checked> set-size title</label><button type="button" class="info" data-ref="set_size_title" data-help="Toggle the set-size axis title. Uncheck to hide it; blank for &quot;Set size&quot;, or type to override.">i</button></div>
+                    <input id="ctrl-settitle" type="text" placeholder="auto">
+                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-intticks" type="checkbox" checked> show_intersection_ticks</label><button type="button" class="info" data-ref="show_intersection_ticks" data-help="Show the numeric tick labels on the intersection-size axis.">i</button></div>
+                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-setticks" type="checkbox" checked> show_set_size_ticks</label><button type="button" class="info" data-ref="show_set_size_ticks" data-help="Show the numeric tick labels on the set-size axis.">i</button></div>
+                </div>
+                <div class="control-card">
+                    <h4 class="card-title">Selection</h4>
+                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-highlight" type="checkbox" checked> highlight_selection</label><button type="button" class="info" data-ref="highlight_selection" data-help="A component property: clicking recolors the selected marks (the intersection's bar + its dots, or the set's bar + its dots) to selection_color. Click a bar or dot below to try it.">i</button></div>
+                    <div class="ctrl">
+                        <div class="ctrl-head"><label for="ctrl-selcolor">selection_color</label><button type="button" class="info" data-ref="selection_color" data-help="A component property: the color applied to the selected marks when highlight_selection is on. Any CSS color.">i</button></div>
+                        <input id="ctrl-selcolor" type="text" value="#d55e00">
+                    </div>
+                </div>
             </aside>
         </div>
     </div>
@@ -335,10 +356,10 @@
 
 <script src="https://cdn.plot.ly/plotly-3.7.0.min.js" charset="utf-8"></script>
 <script src="./assets/nav.js?v=7"></script>
-<script src="./assets/install.js?v=1"></script>
-<script src="./assets/upset.js?v=2"></script>
+<script src="./assets/install.js?v=2"></script>
+<script src="./assets/upset.js?v=3"></script>
 <script src="./data/examples.js?v=1"></script>
-<script src="./assets/explorer.js?v=5"></script>
+<script src="./assets/explorer.js?v=6"></script>
 <script>
     // Canvas tab switcher (Preview / Code / Install).
     (function () {
