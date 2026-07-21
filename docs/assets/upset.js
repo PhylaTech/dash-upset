@@ -340,6 +340,20 @@
         // container (the explorer's viewport-locked canvas).
         if (opts.height) layout.height = opts.height;
 
+        // Accessibility: a screen-reader description, auto-generated when the
+        // caller doesn't supply one (mirror of figure.py). Stored on the figure
+        // so the component/explorer can apply it as an aria-label.
+        var description = opts.description;
+        if (!description) {
+            var bIdx = 0;
+            for (var k = 1; k < sizes.length; k++) if (sizes[k] > sizes[bIdx]) bIdx = k;
+            var bLabel = subsets.length ? labelOf(subsets[bIdx].sets) : "";
+            description = "UpSet plot of " + nSets + " sets (" + setOrder.join(", ") +
+                ") across " + nInt + " intersections. The largest shown intersection is " +
+                bLabel + " with " + (sizes[bIdx] || 0).toLocaleString() + " elements.";
+        }
+        layout.meta = { description: description };
+
         return { data: traces, layout: layout, config: { responsive: true, displayModeBar: false } };
     }
 

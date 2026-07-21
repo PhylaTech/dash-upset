@@ -274,6 +274,17 @@ def test_axis_titles_hidden(sample):
     assert all(ax.title.text != "Intersection size" for ax in fig.select_yaxes())
 
 
+def test_description_auto_generated(sample):
+    desc = create_upset(sample).layout.meta["description"]
+    assert desc.startswith("UpSet plot of")
+    assert "intersections" in desc
+
+
+def test_description_override(sample):
+    fig = create_upset(sample, description="Genes shared across three callers.")
+    assert fig.layout.meta["description"] == "Genes shared across three callers."
+
+
 def test_axis_ticks_hidden(sample):
     fig = create_upset(sample, show_set_size_ticks=False, show_intersection_ticks=False)
     set_axis = next(ax for ax in fig.select_xaxes() if ax.title.text == "Set size")

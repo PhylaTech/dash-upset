@@ -69,6 +69,11 @@ const DashUpset = (props) => {
 
     const gdRef = React.useRef(null);
 
+    // Accessibility: create_upset stashes a screen-reader description on the
+    // figure (layout.meta.description); expose it as the graph's aria-label.
+    const description =
+        (figure && figure.layout && figure.layout.meta && figure.layout.meta.description) || null;
+
     // Repaint the selected marks over the figure's base colors. Base colors are
     // read from the (immutable) figure prop, never from the graph div, so a
     // prior highlight never leaks into the next one.
@@ -156,7 +161,13 @@ const DashUpset = (props) => {
     };
 
     return (
-        <div id={id} style={style} className={className}>
+        <div
+            id={id}
+            style={style}
+            className={className}
+            role={description ? 'img' : undefined}
+            aria-label={description || undefined}
+        >
             <Plot
                 data={(figure && figure.data) || []}
                 layout={(figure && figure.layout) || {}}

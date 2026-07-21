@@ -37,12 +37,18 @@
         .rail-left { grid-area: left; }
         .rail-right { grid-area: right; }
         .canvas { grid-area: canvas; }
-        .deck { grid-area: deck; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .deck { grid-area: deck; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
         .deck .control-card { padding: 8px 11px; gap: 5px; }
         .deck .ctrl { gap: 2px; }
         .deck .toggle-row { min-height: 22px; }
         .deck .ctrl-inline { min-height: 22px; }
         .rail { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
+        /* Compact the rail cards so both (Dataset+Counting / Filtering+Labels)
+           fit the locked viewport without spilling into the deck. */
+        .rail .control-card { padding: 9px 11px; gap: 6px; }
+        .rail .ctrl { gap: 2px; }
+        .rail .toggle-row { min-height: 22px; }
+        .rail .ctrl-inline { min-height: 22px; }
 
         .control-card {
             border: 1px solid var(--ink-hairline); border-radius: var(--radius-lg);
@@ -55,8 +61,9 @@
         }
 
         /* Control primitives */
-        .ctrl { display: flex; flex-direction: column; gap: 3px; }
-        .ctrl-head { display: flex; align-items: center; gap: 6px; }
+        .ctrl { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+        .ctrl-head { display: flex; align-items: center; gap: 6px; min-width: 0; }
+        .ctrl-head label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
         .ctrl-head label {
             font-size: 0.7rem; font-weight: 600; color: var(--color-text-muted);
             text-transform: uppercase; letter-spacing: 0.03em;
@@ -66,11 +73,17 @@
         .ctrl input[type="text"] {
             font-size: 0.85rem; padding: 5px 8px; border: 1px solid var(--color-border);
             border-radius: var(--radius); background: var(--color-bg); color: var(--color-text);
-            width: 100%; box-sizing: border-box;
+            width: 100%; min-width: 0; box-sizing: border-box;
         }
         .ctrl input[type="color"] {
             width: 100%; height: 28px; padding: 2px; border: 1px solid var(--color-border);
             border-radius: var(--radius); background: var(--color-bg); cursor: pointer;
+        }
+        .ctrl textarea {
+            font: inherit; font-size: 0.82rem; line-height: 1.35; padding: 5px 8px;
+            border: 1px solid var(--color-border); border-radius: var(--radius);
+            background: var(--color-bg); color: var(--color-text);
+            width: 100%; min-width: 0; box-sizing: border-box; resize: none;
         }
         .toggle-row { display: flex; align-items: center; gap: 6px; }
         .ctrl-inline {
@@ -78,8 +91,12 @@
             font-size: 0.82rem; font-weight: 400; color: var(--color-text);
             text-transform: none; letter-spacing: 0;
         }
+        /* Filtering: two compact columns. No per-field info icons here (they
+           stole width and truncated the arg names); lowercase labels (as in
+           code) fit the narrow columns in full. */
         .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .filter-grid .ctrl.full { grid-column: 1 / -1; }
+        .filter-grid .ctrl-head label { text-transform: none; font-size: 0.68rem; letter-spacing: 0; }
         .deck-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
         .deck-grid .full { grid-column: 1 / -1; }
 
@@ -309,23 +326,23 @@
                     <h4 class="card-title">Filtering</h4>
                     <div class="filter-grid">
                         <div class="ctrl">
-                            <div class="ctrl-head"><label for="ctrl-minsize">min_subset_size</label><button type="button" class="info" data-ref="min_subset_size" data-help="Hide intersections smaller than this size.">i</button></div>
+                            <div class="ctrl-head"><label for="ctrl-minsize">min_subset_size</label></div>
                             <input id="ctrl-minsize" type="number" min="0" step="1" placeholder="none">
                         </div>
                         <div class="ctrl">
-                            <div class="ctrl-head"><label for="ctrl-maxsize">max_subset_size</label><button type="button" class="info" data-ref="max_subset_size" data-help="Hide intersections larger than this size.">i</button></div>
+                            <div class="ctrl-head"><label for="ctrl-maxsize">max_subset_size</label></div>
                             <input id="ctrl-maxsize" type="number" min="0" step="1" placeholder="none">
                         </div>
                         <div class="ctrl">
-                            <div class="ctrl-head"><label for="ctrl-mindegree">min_degree</label><button type="button" class="info" data-ref="min_degree" data-help="Hide intersections involving fewer than this many sets.">i</button></div>
+                            <div class="ctrl-head"><label for="ctrl-mindegree">min_degree</label></div>
                             <input id="ctrl-mindegree" type="number" min="0" step="1" placeholder="none">
                         </div>
                         <div class="ctrl">
-                            <div class="ctrl-head"><label for="ctrl-maxdegree">max_degree</label><button type="button" class="info" data-ref="max_degree" data-help="Hide intersections involving more than this many sets.">i</button></div>
+                            <div class="ctrl-head"><label for="ctrl-maxdegree">max_degree</label></div>
                             <input id="ctrl-maxdegree" type="number" min="0" step="1" placeholder="none">
                         </div>
                         <div class="ctrl full">
-                            <div class="ctrl-head"><label for="ctrl-maxsubsets">max_subsets</label><button type="button" class="info" data-ref="max_subsets" data-help="Keep only the N largest intersections (ties at the cutoff are all kept).">i</button></div>
+                            <div class="ctrl-head"><label for="ctrl-maxsubsets">max_subsets</label></div>
                             <input id="ctrl-maxsubsets" type="number" min="1" step="1" placeholder="none">
                         </div>
                     </div>
@@ -394,6 +411,13 @@
                         <input id="ctrl-selcolor" type="color" value="#d55e00">
                     </div>
                 </div>
+                <div class="control-card">
+                    <h4 class="card-title">Accessibility</h4>
+                    <div class="ctrl" style="flex: 1;">
+                        <div class="ctrl-head"><label for="ctrl-desc">description</label><button type="button" class="info" data-ref="description" data-help="Screen-reader text for the plot, applied as the graph's aria-label. Leave blank to auto-generate a summary (sets, intersection count, largest intersection).">i</button></div>
+                        <textarea id="ctrl-desc" rows="4" placeholder="auto-generated summary"></textarea>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -412,9 +436,9 @@
 <script src="https://cdn.plot.ly/plotly-3.7.0.min.js" charset="utf-8"></script>
 <script src="./assets/nav.js?v=7"></script>
 <script src="./assets/install.js?v=2"></script>
-<script src="./assets/upset.js?v=4"></script>
+<script src="./assets/upset.js?v=5"></script>
 <script src="./data/examples.js?v=1"></script>
-<script src="./assets/explorer.js?v=7"></script>
+<script src="./assets/explorer.js?v=8"></script>
 <script>
     // Canvas tab switcher (Preview / Code / Install).
     (function () {

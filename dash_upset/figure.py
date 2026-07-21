@@ -138,6 +138,7 @@ def create_upset(
     color: str | None = None,
     inactive_color: str | None = None,
     title: str | None = None,
+    description: str | None = None,
     intersection_title: str | None = _AUTO,
     set_size_title: str | None = _AUTO,
     show_intersection_ticks: bool = True,
@@ -191,6 +192,11 @@ def create_upset(
         inactive_color: Color of the non-member matrix dots. Defaults to the
             theme's inactive tone; an explicit value overrides the theme.
         title: Optional figure title.
+        description: A text description of the plot for screen readers, stored
+            on the figure (``layout.meta['description']``) and applied by the
+            ``UpSet`` component as the graph's ``aria-label``. When ``None`` a
+            concise summary is generated automatically (set count, set names,
+            intersection count, and the largest shown intersection).
         intersection_title: Title of the intersection-size axis. Omit for the
             automatic label (``"Intersection size"``, or the mode-specific
             variant); pass a string to override it, or ``None`` to hide it.
@@ -420,6 +426,14 @@ def create_upset(
             layer="below",
         )
 
+    if description is None:
+        biggest = max(range(n_intersections), key=lambda i: sizes[i])
+        description = (
+            f"UpSet plot of {n_sets} sets ({', '.join(set_order)}) across "
+            f"{n_intersections} intersections. The largest shown intersection is "
+            f"{labels[biggest]} with {sizes[biggest]:,} elements."
+        )
+
     max_size = max(sizes)
     headroom = 1.18 if (show_counts or show_percentages) else 1.05
     intersection_range = [0, max_size * headroom if max_size > 0 else 1]
@@ -518,6 +532,7 @@ def create_upset(
         plot_bgcolor=th["paper"],
         colorway=th["colorway"],
         hoverlabel={"font": {"size": 12}},
+        meta={"description": description},
     )
     if template is not None:
         fig.update_layout(template=template)

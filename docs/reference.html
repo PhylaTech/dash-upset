@@ -96,6 +96,7 @@
                 <li><a href="#color">color</a></li>
                 <li><a href="#inactive_color">inactive_color</a></li>
                 <li><a href="#title">title</a></li>
+                <li><a href="#description">description</a></li>
                 <li><a href="#intersection_title">intersection_title</a></li>
                 <li><a href="#set_size_title">set_size_title</a></li>
                 <li><a href="#show_intersection_ticks">show_intersection_ticks</a></li>
@@ -271,6 +272,11 @@ def show(selection):
                 <article class="prop" id="title">
                     <div class="prop-head"><h3>title<a class="anchor" href="#title">#</a></h3><span class="pill type">str | None</span><span class="pill default">None</span></div>
                     <div class="prop-body"><p>Optional figure title, drawn top-left.</p></div>
+                </article>
+
+                <article class="prop" id="description">
+                    <div class="prop-head"><h3>description<a class="anchor" href="#description">#</a></h3><span class="pill type">str | None</span><span class="pill default">auto</span></div>
+                    <div class="prop-body"><p>A text description of the plot for screen readers. It is stored on the figure (<code>layout.meta["description"]</code>) and the <code>UpSet</code> component applies it as the graph's <code>aria-label</code> (with <code>role="img"</code>). Leave it unset to auto-generate a concise summary &mdash; set count, set names, intersection count, and the largest shown intersection.</p></div>
                 </article>
 
                 <article class="prop" id="intersection_title">
