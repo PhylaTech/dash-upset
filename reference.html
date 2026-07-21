@@ -67,7 +67,8 @@
             <h4>UpSet</h4>
             <ul>
                 <li><a href="#UpSet">UpSet</a></li>
-                <li><a href="#selection">selection</a></li>
+                <li><a href="#selected_intersection">selected_intersection</a></li>
+                <li><a href="#selected_sets">selected_sets</a></li>
             </ul>
             <h4>create_upset</h4>
             <ul>
@@ -114,12 +115,12 @@
             <!-- UpSet component -->
             <section class="ref-group" id="upset-component">
                 <h2>UpSet</h2>
-                <p class="group-desc">The Dash component. Put it in your layout; it renders <code>create_upset</code> inside a <code>dcc.Graph</code> and wires clicks to selection stores your callbacks can read.</p>
+                <p class="group-desc">The Dash component. Put it in your layout; it builds the same figure as <code>create_upset</code> and turns clicks into two component properties your callbacks read the standard Dash way: <code>Input(id, property)</code>.</p>
 
                 <article class="prop" id="UpSet">
                     <div class="prop-head"><h3>UpSet<a class="anchor" href="#UpSet">#</a></h3><span class="pill type">component</span></div>
                     <div class="prop-body">
-                        <p>Accepts <code>data</code> and <code>sets</code> plus every <code>create_upset</code> keyword below, and <code>id</code> (used to address it from callbacks) and an optional <code>graph_config</code>.</p>
+                        <p>Accepts <code>data</code> and <code>sets</code> plus every <code>create_upset</code> keyword below, and the usual component props: <code>id</code>, <code>style</code>, <code>className</code>, and an optional plotly.js <code>config</code>.</p>
                         <div class="snippet"><pre><code>from dash import Dash
 from dash_upset import UpSet
 
@@ -128,16 +129,23 @@ app.layout = UpSet(id="genes", data=df, sets=["A", "B", "C"])</code></pre></div>
                     </div>
                 </article>
 
-                <article class="prop" id="selection">
-                    <div class="prop-head"><h3>selection<a class="anchor" href="#selection">#</a></h3><span class="pill type">callback state</span></div>
+                <article class="prop" id="selected_intersection">
+                    <div class="prop-head"><h3>selected_intersection<a class="anchor" href="#selected_intersection">#</a></h3><span class="pill type">dict | None</span><span class="pill default">None</span></div>
                     <div class="prop-body">
-                        <p>Clicks populate two stores addressed via <code>UpSet.ids</code>. <code>selected_intersection</code> holds <code>{"label", "sets", "size"}</code> when an intersection bar or matrix dot is clicked; <code>selected_sets</code> holds a list of set names when a set-size bar is clicked.</p>
+                        <p>Set when an intersection-size bar or a matrix dot is clicked: <code>{"label", "sets", "size"}</code> (<code>size</code> only for bar clicks). <code>None</code> until the first click.</p>
                         <div class="snippet"><pre><code>@callback(
     Output("out", "children"),
-    Input(UpSet.ids.selected_intersection("genes"), "data"),
+    Input("genes", "selected_intersection"),
 )
 def show(selection):
     return str(selection)</code></pre></div>
+                    </div>
+                </article>
+
+                <article class="prop" id="selected_sets">
+                    <div class="prop-head"><h3>selected_sets<a class="anchor" href="#selected_sets">#</a></h3><span class="pill type">list[str]</span><span class="pill default">[]</span></div>
+                    <div class="prop-body">
+                        <p>Set when a set-size bar is clicked: a list of set names. Read it with <code>Input("genes", "selected_sets")</code>.</p>
                     </div>
                 </article>
             </section>

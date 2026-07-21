@@ -122,10 +122,10 @@
 <section id="quickstart">
     <div class="container">
         <h2>Quick start</h2>
-        <p class="section-lead">Drop the <code>UpSet</code> component into a Dash layout and hand it a dataframe with one boolean column per set. Clicks are exposed to your callbacks &mdash; no wiring.</p>
+        <p class="section-lead">Drop the <code>UpSet</code> component into a Dash layout and hand it a dataframe with one boolean column per set. Clicks surface as component properties you read the standard Dash way: <code>Input(id, property)</code>.</p>
         <div class="snippet">
 <pre><code>import pandas as pd
-from dash import Dash
+from dash import Dash, Input, Output, callback, html
 from dash_upset import UpSet
 
 df = pd.DataFrame(
@@ -137,14 +137,26 @@ df = pd.DataFrame(
 )
 
 app = Dash(__name__)
-app.layout = UpSet(
-    id="movies",
-    data=df,
-    sets=["Action", "Comedy", "Drama"],
-    sort_by="cardinality",  # or "degree", "deviation"
-    mode="distinct",  # or "intersect", "union"
-    theme="auto",  # follows the page (light / dark)
+app.layout = html.Div(
+    [
+        UpSet(
+            id="movies",
+            data=df,
+            sets=["Action", "Comedy", "Drama"],
+            sort_by="cardinality",  # or "degree", "deviation"
+            mode="distinct",  # or "intersect", "union"
+            theme="auto",  # follows the page (light / dark)
+        ),
+        html.Pre(id="out"),
+    ]
 )
+
+
+@callback(Output("out", "children"), Input("movies", "selected_intersection"))
+def show(selection):
+    # {"label": "Action & Comedy", "sets": ["Action", "Comedy"], "size": 2}
+    return str(selection)
+
 
 if __name__ == "__main__":
     app.run(debug=True)</code></pre>
