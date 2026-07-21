@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" role="img" aria-label="dash-upset">
+  <!-- Placeholder mark: an UpSet motif -- size bars over a connected dot
+       column. Swap for the designer's logo when it lands (see the brief).
+       Hex fills (not oklch) so it renders reliably as an <img> src. -->
+  <rect x="3"  y="3" width="3.4" height="7" rx="1.2" fill="#9c5a3c"/>
+  <rect x="8"  y="6" width="3.4" height="4" rx="1.2" fill="#9c5a3c"/>
+  <rect x="13" y="1" width="3.4" height="9" rx="1.2" fill="#9c5a3c"/>
+  <line x1="4.7" y1="18.5" x2="14.7" y2="18.5" stroke="#2f2a24" stroke-width="1.6" stroke-linecap="round"/>
+  <circle cx="4.7"  cy="14.5" r="1.9" fill="#2f2a24"/>
+  <circle cx="9.7"  cy="18.5" r="1.9" fill="#2f2a24"/>
+  <circle cx="14.7" cy="18.5" r="1.9" fill="#2f2a24"/>
+  <circle cx="14.7" cy="14.5" r="1.9" fill="#dcd4c8"/>
+</svg>

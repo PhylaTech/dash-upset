@@ -1,13 +1,12 @@
 /**
  * Shared site navigation, matched to the dash-seqviz house style.
  * Renders a sticky top bar into any element with id="site-nav-mount".
- * The active link is chosen from <body data-page="home|examples|docs">.
+ * The active link is chosen from <body data-page="home|explorer|reference">.
  */
 (function () {
     var REPO = "https://github.com/PhylaTech/dash-upset";
     var LINKS = [
         { id: "home", label: "Home", href: "./" },
-        { id: "examples", label: "Examples", href: "./examples.html" },
         { id: "explorer", label: "Component Explorer", href: "./explorer.html" },
         { id: "reference", label: "Reference", href: "./reference.html" },
     ];
@@ -27,7 +26,9 @@
         var brand = document.createElement("a");
         brand.className = "site-nav-brand";
         brand.href = "./";
-        brand.innerHTML = 'dash-<span>upset</span>';
+        brand.innerHTML =
+            '<img class="site-nav-logo" src="./assets/logo-mark.svg" alt="" width="22" height="22" aria-hidden="true">' +
+            '<span class="site-nav-wordmark">dash-<span>upset</span></span>';
         inner.appendChild(brand);
 
         var links = document.createElement("div");

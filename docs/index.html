@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+    <link rel="icon" href="./assets/logo-mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="./assets/site.css?v=5">
 </head>
 <body data-page="home">
@@ -100,19 +101,25 @@
 <section id="install">
     <div class="container">
         <h2>Install</h2>
-        <p class="section-lead">Pre-release: the package is not on PyPI or conda-forge yet. Install from source for now; the commands below are how it will ship.</p>
-        <div class="install-grid">
-            <div class="install-card">
-                <h3>Python (PyPI)</h3>
-                <div class="snippet"><pre><code>pip install dash-upset</code></pre></div>
+        <p class="section-lead">Pre-release: the package is not on PyPI or conda-forge yet. Install from source for now (<code>pip install git+https://github.com/PhylaTech/dash-upset</code>); the commands below are how it will ship.</p>
+        <div class="install-tabs" data-install>
+            <div class="install-tabs-bar" role="tablist" aria-label="Package manager">
+                <button class="install-tab is-active" data-target="conda" role="tab" aria-selected="true">conda</button>
+                <button class="install-tab" data-target="mamba" role="tab" aria-selected="false">mamba</button>
+                <button class="install-tab" data-target="pixi" role="tab" aria-selected="false">pixi</button>
+                <button class="install-tab" data-target="pip" role="tab" aria-selected="false">pip</button>
             </div>
-            <div class="install-card">
-                <h3>Conda</h3>
+            <div class="install-panel is-active" data-panel="conda">
                 <div class="snippet"><pre><code>conda install -c conda-forge dash-upset</code></pre></div>
             </div>
-            <div class="install-card">
-                <h3>From source (today)</h3>
-                <div class="snippet"><pre><code>pip install git+https://github.com/PhylaTech/dash-upset</code></pre></div>
+            <div class="install-panel" data-panel="mamba">
+                <div class="snippet"><pre><code>mamba install -c conda-forge dash-upset</code></pre></div>
+            </div>
+            <div class="install-panel" data-panel="pixi">
+                <div class="snippet"><pre><code>pixi add dash-upset</code></pre></div>
+            </div>
+            <div class="install-panel" data-panel="pip">
+                <div class="snippet"><pre><code>pip install dash-upset</code></pre></div>
             </div>
         </div>
     </div>
@@ -229,7 +236,8 @@ from_contents({"A": ["x", "y"], "B": ["y", "z"]})    # per-set element ids</code
     </p>
 </footer>
 
-<script src="./assets/nav.js?v=6"></script>
+<script src="./assets/nav.js?v=7"></script>
+<script src="./assets/install.js?v=1"></script>
 <script src="https://cdn.plot.ly/plotly-3.7.0.min.js" charset="utf-8"></script>
 <script src="./assets/demo.js?v=1"></script>
 <script>
