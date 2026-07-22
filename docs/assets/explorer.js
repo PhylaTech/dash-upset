@@ -199,9 +199,14 @@
             // Autosized figure: fit it to the (viewport-locked) canvas.
             window.Plotly.Plots.resize(root);
             // Accessibility: expose the figure's description as the graph's
-            // aria-label, exactly as the compiled component does.
+            // aria-label, and surface the auto-generated summary as the
+            // textarea placeholder so the user sees what "blank = auto" yields.
             var desc = fig.layout && fig.layout.meta && fig.layout.meta.description;
-            if (desc) { root.setAttribute("role", "img"); root.setAttribute("aria-label", desc); }
+            if (desc) {
+                root.setAttribute("role", "img");
+                root.setAttribute("aria-label", desc);
+                if (!el.description.value) el.description.placeholder = desc;
+            }
             // Snapshot the base colors so click-highlight paints over them.
             baseColors = window.DashUpset.baseColorsOf(fig);
             // Rebind after every (re)render: Plotly.purge on the no-subsets
