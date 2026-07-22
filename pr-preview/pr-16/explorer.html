@@ -27,26 +27,21 @@
         .bench-head h1 { margin: 0 0 2px; }
         .bench-head p { margin: 0; color: var(--color-text-muted); max-width: 70ch; font-size: 0.92rem; }
 
+        /* Controls live entirely in the two rails flanking the canvas; the
+           canvas takes the full height between them (no header, no bottom deck).
+           Rails scroll internally only if a very short viewport can't fit their
+           cards -- the page itself never scrolls. */
         .workbench {
             display: grid;
-            grid-template-columns: 240px minmax(0, 1fr) 240px;
-            grid-template-rows: minmax(0, 1fr) auto;
-            grid-template-areas: "left canvas right" "deck deck deck";
+            grid-template-columns: 244px minmax(0, 1fr) 244px;
             gap: 12px; align-items: stretch;
         }
-        .rail-left { grid-area: left; }
-        .rail-right { grid-area: right; }
-        .canvas { grid-area: canvas; }
-        .deck { grid-area: deck; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-        .deck .control-card { padding: 8px 11px; gap: 5px; }
-        .deck .ctrl { gap: 2px; }
-        .deck .toggle-row { min-height: 22px; }
-        .deck .ctrl-inline { min-height: 22px; }
-        .rail { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
-        /* Compact the rail cards so both (Dataset+Counting / Filtering+Labels)
-           fit the locked viewport without spilling into the deck. */
+        .rail-left { grid-column: 1; }
+        .canvas { grid-column: 2; }
+        .rail-right { grid-column: 3; }
+        .rail { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
         .rail .control-card { padding: 9px 11px; gap: 6px; }
-        .rail .ctrl { gap: 2px; }
+        .rail .ctrl { gap: 3px; }
         .rail .toggle-row { min-height: 22px; }
         .rail .ctrl-inline { min-height: 22px; }
 
@@ -209,11 +204,6 @@
 
 <section class="bench">
     <div class="container">
-        <div class="bench-head">
-            <h1>Component Explorer</h1>
-            <p>Every control maps to a <code>create_upset</code> / <code>UpSet</code> argument &mdash; hover <span aria-hidden="true">&#9432;</span> for details, export the figure, or copy the snippet from the <strong>Code</strong> tab.</p>
-        </div>
-
         <div class="workbench" aria-label="Component workbench">
             <!-- LEFT: data + counting -->
             <aside class="rail rail-left" aria-label="Dataset and counting controls">
@@ -256,6 +246,48 @@
                             <option value="input">input</option>
                         </select>
                     </div>
+                </div>
+                <div class="control-card">
+                    <h4 class="card-title">Appearance</h4>
+                    <div class="ctrl">
+                        <div class="ctrl-head"><label for="ctrl-orientation">orientation</label><button type="button" class="info" data-ref="orientation" data-help="&lt;code&gt;horizontal&lt;/code&gt; (default) or &lt;code&gt;vertical&lt;/code&gt;: sets become columns, intersections rows, set bars on top and intersection bars on the right.">i</button></div>
+                        <select id="ctrl-orientation">
+                            <option value="horizontal" selected>horizontal</option>
+                            <option value="vertical">vertical</option>
+                        </select>
+                    </div>
+                    <div class="ctrl">
+                        <div class="ctrl-head"><label for="ctrl-theme">theme</label><button type="button" class="info" data-ref="theme" data-help="Light, dark, or auto, plus colorblind-safe palettes (Okabe-Ito, ColorBrewer, Paul Tol). A palette colors each set.">i</button></div>
+                        <select id="ctrl-theme">
+                            <option value="light" selected>light</option>
+                            <option value="dark">dark</option>
+                            <option value="auto">auto</option>
+                            <option value="okabe-ito-light">okabe-ito-light</option>
+                            <option value="okabe-ito-dark">okabe-ito-dark</option>
+                            <option value="colorbrewer-light">colorbrewer-light</option>
+                            <option value="colorbrewer-dark">colorbrewer-dark</option>
+                            <option value="tol-light">tol-light</option>
+                            <option value="tol-dark">tol-dark</option>
+                        </select>
+                    </div>
+                    <div class="ctrl">
+                        <div class="ctrl-head"><label for="ctrl-title">title</label><button type="button" class="info" data-ref="title" data-help="Optional title shown at the top-left of the figure.">i</button></div>
+                        <input id="ctrl-title" type="text" placeholder="none">
+                    </div>
+                    <div class="ctrl">
+                        <div class="ctrl-head"><label for="ctrl-color">color</label><button type="button" class="info" data-ref="color" data-help="Color of the bars, active dots, and connectors. Overrides the theme ink / palette. Any CSS color; blank keeps the theme.">i</button></div>
+                        <input id="ctrl-color" type="text" placeholder="theme default">
+                    </div>
+                    <div class="ctrl">
+                        <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-inactive-on" type="checkbox"> inactive_color</label><button type="button" class="info" data-ref="inactive_color" data-help="Color of the empty (non-member) matrix dots. Tick to override the theme default, then pick a color.">i</button></div>
+                        <input id="ctrl-inactive" type="color" value="#d8d7d1" disabled>
+                    </div>
+                </div>
+                <div class="control-card">
+                    <h4 class="card-title">Labels</h4>
+                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-showcounts" type="checkbox" checked> show_counts</label><button type="button" class="info" data-ref="show_counts" data-help="Label each intersection bar with its count.">i</button></div>
+                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-showpct" type="checkbox"> show_percentages</label><button type="button" class="info" data-ref="show_percentages" data-help="Label each bar with its percent of the total. Combined with &lt;code&gt;show_counts&lt;/code&gt; the label reads &lt;code&gt;N (X%)&lt;/code&gt;.">i</button></div>
+                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-showempty" type="checkbox"> show_empty</label><button type="button" class="info" data-ref="show_empty" data-help="Include the empty intersection (elements in no set).">i</button></div>
                 </div>
             </aside>
 
@@ -348,67 +380,17 @@
                     </div>
                 </div>
                 <div class="control-card">
-                    <h4 class="card-title">Labels</h4>
-                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-showcounts" type="checkbox" checked> show_counts</label><button type="button" class="info" data-ref="show_counts" data-help="Label each intersection bar with its count.">i</button></div>
-                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-showpct" type="checkbox"> show_percentages</label><button type="button" class="info" data-ref="show_percentages" data-help="Label each bar with its percent of the total. Combined with &lt;code&gt;show_counts&lt;/code&gt; the label reads &lt;code&gt;N (X%)&lt;/code&gt;.">i</button></div>
-                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-showempty" type="checkbox"> show_empty</label><button type="button" class="info" data-ref="show_empty" data-help="Include the empty intersection (elements in no set).">i</button></div>
-                </div>
-            </aside>
-
-            <!-- BOTTOM: appearance + axis labels + selection -->
-            <div class="deck">
-                <div class="control-card">
-                    <h4 class="card-title">Appearance</h4>
-                    <div class="deck-grid">
-                        <div class="ctrl">
-                            <div class="ctrl-head"><label for="ctrl-orientation">orientation</label><button type="button" class="info" data-ref="orientation" data-help="&lt;code&gt;horizontal&lt;/code&gt; (default) or &lt;code&gt;vertical&lt;/code&gt;: sets become columns, intersections rows, set bars on top and intersection bars on the right.">i</button></div>
-                            <select id="ctrl-orientation">
-                                <option value="horizontal" selected>horizontal</option>
-                                <option value="vertical">vertical</option>
-                            </select>
-                        </div>
-                        <div class="ctrl">
-                            <div class="ctrl-head"><label for="ctrl-theme">theme</label><button type="button" class="info" data-ref="theme" data-help="Light, dark, or auto, plus colorblind-safe palettes (Okabe-Ito, ColorBrewer, Paul Tol). A palette colors each set.">i</button></div>
-                            <select id="ctrl-theme">
-                                <option value="light" selected>light</option>
-                                <option value="dark">dark</option>
-                                <option value="auto">auto</option>
-                                <option value="okabe-ito-light">okabe-ito-light</option>
-                                <option value="okabe-ito-dark">okabe-ito-dark</option>
-                                <option value="colorbrewer-light">colorbrewer-light</option>
-                                <option value="colorbrewer-dark">colorbrewer-dark</option>
-                                <option value="tol-light">tol-light</option>
-                                <option value="tol-dark">tol-dark</option>
-                            </select>
-                        </div>
-                        <div class="ctrl">
-                            <div class="ctrl-head"><label for="ctrl-title">title</label><button type="button" class="info" data-ref="title" data-help="Optional title shown at the top-left of the figure.">i</button></div>
-                            <input id="ctrl-title" type="text" placeholder="none">
-                        </div>
-                        <div class="ctrl">
-                            <div class="ctrl-head"><label for="ctrl-color">color</label><button type="button" class="info" data-ref="color" data-help="Color of the bars, active dots, and connectors. Overrides the theme ink / palette. Any CSS color; blank keeps the theme.">i</button></div>
-                            <input id="ctrl-color" type="text" placeholder="theme default">
-                        </div>
-                        <div class="ctrl">
-                            <div class="ctrl-head"><label for="ctrl-inactive-on" class="ctrl-inline" style="text-transform:uppercase;letter-spacing:0.03em;font-size:0.7rem;font-weight:600;color:var(--color-text-muted);"><input id="ctrl-inactive-on" type="checkbox"> inactive_color</label><button type="button" class="info" data-ref="inactive_color" data-help="Color of the empty (non-member) matrix dots. Tick to override the theme default, then pick a color.">i</button></div>
-                            <input id="ctrl-inactive" type="color" value="#d8d7d1" disabled>
-                        </div>
-                    </div>
-                </div>
-                <div class="control-card">
                     <h4 class="card-title">Axis labels</h4>
-                    <div class="deck-grid">
-                        <div class="ctrl">
-                            <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-show-inttitle" type="checkbox" checked> intersection title</label><button type="button" class="info" data-ref="intersection_title" data-help="Toggle the intersection-size axis title. Uncheck to hide it; leave the field blank for the automatic label, or type to override.">i</button></div>
-                            <input id="ctrl-inttitle" type="text" placeholder="auto">
-                        </div>
-                        <div class="ctrl">
-                            <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-show-settitle" type="checkbox" checked> set-size title</label><button type="button" class="info" data-ref="set_size_title" data-help="Toggle the set-size axis title. Uncheck to hide it; blank for &quot;Set size&quot;, or type to override.">i</button></div>
-                            <input id="ctrl-settitle" type="text" placeholder="auto">
-                        </div>
-                        <div class="toggle-row full"><label class="ctrl-inline"><input id="ctrl-intticks" type="checkbox" checked> show_intersection_ticks</label><button type="button" class="info" data-ref="show_intersection_ticks" data-help="Show the numeric tick labels on the intersection-size axis.">i</button></div>
-                        <div class="toggle-row full"><label class="ctrl-inline"><input id="ctrl-setticks" type="checkbox" checked> show_set_size_ticks</label><button type="button" class="info" data-ref="show_set_size_ticks" data-help="Show the numeric tick labels on the set-size axis.">i</button></div>
+                    <div class="ctrl">
+                        <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-show-inttitle" type="checkbox" checked> intersection title</label><button type="button" class="info" data-ref="intersection_title" data-help="Toggle the intersection-size axis title. Uncheck to hide it; leave the field blank for the automatic label, or type to override.">i</button></div>
+                        <input id="ctrl-inttitle" type="text" placeholder="auto">
                     </div>
+                    <div class="ctrl">
+                        <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-show-settitle" type="checkbox" checked> set-size title</label><button type="button" class="info" data-ref="set_size_title" data-help="Toggle the set-size axis title. Uncheck to hide it; blank for &quot;Set size&quot;, or type to override.">i</button></div>
+                        <input id="ctrl-settitle" type="text" placeholder="auto">
+                    </div>
+                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-intticks" type="checkbox" checked> show_intersection_ticks</label><button type="button" class="info" data-ref="show_intersection_ticks" data-help="Show the numeric tick labels on the intersection-size axis.">i</button></div>
+                    <div class="toggle-row"><label class="ctrl-inline"><input id="ctrl-setticks" type="checkbox" checked> show_set_size_ticks</label><button type="button" class="info" data-ref="show_set_size_ticks" data-help="Show the numeric tick labels on the set-size axis.">i</button></div>
                 </div>
                 <div class="control-card">
                     <h4 class="card-title">Selection</h4>
@@ -420,12 +402,12 @@
                 </div>
                 <div class="control-card">
                     <h4 class="card-title">Accessibility</h4>
-                    <div class="ctrl" style="flex: 1;">
+                    <div class="ctrl">
                         <div class="ctrl-head"><label for="ctrl-desc">description</label><button type="button" class="info" data-ref="description" data-help="Screen-reader text for the plot, applied as the graph's aria-label. Leave blank to auto-generate a summary (sets, intersection count, largest intersection).">i</button></div>
-                        <textarea id="ctrl-desc" rows="4" placeholder="auto-generated summary"></textarea>
+                        <textarea id="ctrl-desc" rows="3" placeholder="auto-generated summary"></textarea>
                     </div>
                 </div>
-            </div>
+            </aside>
         </div>
     </div>
 </section>
@@ -445,7 +427,7 @@
 <script src="./assets/install.js?v=2"></script>
 <script src="./assets/upset.js?v=6"></script>
 <script src="./data/examples.js?v=1"></script>
-<script src="./assets/explorer.js?v=9"></script>
+<script src="./assets/explorer.js?v=10"></script>
 <script>
     // Canvas tab switcher (Preview / Code / Install).
     (function () {
