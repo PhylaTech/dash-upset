@@ -5,8 +5,8 @@ Interactive [UpSet plots](https://upset.app) for [Plotly Dash](https://dash.plot
 > **Status: early development (pre-1.0).** The data model, the figure factory
 > (`create_upset`), and the interactive `UpSet` Dash component with
 > click-selection callback properties are implemented and tested; see the
-> [roadmap](./ROADMAP.md) for what's next. Not yet published to PyPI or
-> conda-forge. Documentation: https://phylatech.github.io/dash-upset/
+> [roadmap](./ROADMAP.md) for what's next. Available from conda-forge and
+> PyPI. Documentation: https://phylatech.github.io/dash-upset/
 
 ## What is an UpSet plot?
 
