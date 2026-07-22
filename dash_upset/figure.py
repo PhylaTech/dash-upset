@@ -143,6 +143,7 @@ def create_upset(
     set_size_title: str | None = _AUTO,
     show_intersection_ticks: bool = True,
     show_set_size_ticks: bool = True,
+    orientation: str = "horizontal",
     width: int | None = None,
     height: int | None = None,
     template: str | None = "plotly_white",
@@ -205,6 +206,11 @@ def create_upset(
         show_intersection_ticks: Show the numeric tick labels on the
             intersection-size axis.
         show_set_size_ticks: Show the numeric tick labels on the set-size axis.
+        orientation: ``"horizontal"`` (default) lays intersections along the
+            x-axis as columns (set-size bars on the left); ``"vertical"``
+            transposes the plot -- sets become columns, intersections become
+            rows, set-size bars sit on top and intersection-size bars extend to
+            the right. Vertical suits many intersections in a narrow width.
         width: Figure width in pixels; ``None`` means responsive.
         height: Figure height in pixels; ``None`` computes one from the
             number of sets.
@@ -262,125 +268,158 @@ def create_upset(
     else:
         set_colors = [ink] * n_sets
 
-    matrix_px = _ROW_PX * n_sets
-    matrix_fraction = min(0.8, max(0.12, matrix_px / (matrix_px + _BAR_PANEL_PX)))
+    if orientation not in ("horizontal", "vertical"):
+        raise ValueError(f"orientation must be 'horizontal' or 'vertical', got {orientation!r}")
+    vertical = orientation == "vertical"
+
+    # The matrix's "row" axis carries sets (horizontal) or intersections
+    # (vertical); the bar panel sits perpendicular to it. Vertical's top
+    # set-size panel is a secondary track, so it gets a smaller allowance than
+    # horizontal's primary intersection-bar panel.
+    n_matrix_rows = n_intersections if vertical else n_sets
+    bar_panel_px = 150 if vertical else _BAR_PANEL_PX
+    matrix_px = _ROW_PX * n_matrix_rows
+    matrix_fraction = min(0.8, max(0.12, matrix_px / (matrix_px + bar_panel_px)))
     chrome_px = 110 if title else 80
     if height is None:
-        height = int(matrix_px + _BAR_PANEL_PX + chrome_px)
+        height = int(matrix_px + bar_panel_px + chrome_px)
         row_px = float(_ROW_PX)
     else:
-        row_px = max(1.0, (height - chrome_px) * matrix_fraction / n_sets)
+        row_px = max(1.0, (height - chrome_px) * matrix_fraction / n_matrix_rows)
     dot_px = min(16, max(8, round(row_px * 0.42)))
     connector_px = max(2.0, round(dot_px * 0.22, 1))
 
+    if vertical:
+        # Set-size bars top-left, matrix bottom-left, intersection bars right.
+        specs = [[{}, None], [{}, {}]]
+        column_widths = [0.72, 0.28]
+        set_rc, int_rc, mat_rc = {"row": 1, "col": 1}, {"row": 2, "col": 2}, {"row": 2, "col": 1}
+    else:
+        # Intersection bars top-right, set-size bars bottom-left, matrix below.
+        specs = [[None, {}], [{}, {}]]
+        column_widths = [0.25, 0.75]
+        set_rc, int_rc, mat_rc = {"row": 2, "col": 1}, {"row": 1, "col": 2}, {"row": 2, "col": 2}
     fig = make_subplots(
         rows=2,
         cols=2,
-        specs=[[None, {}], [{}, {}]],
+        specs=specs,
         shared_xaxes=True,
         shared_yaxes=True,
-        column_widths=[0.25, 0.75],
+        column_widths=column_widths,
         row_heights=[1 - matrix_fraction, matrix_fraction],
-        horizontal_spacing=0.02,
+        horizontal_spacing=0.03 if vertical else 0.02,
         vertical_spacing=0.04,
     )
 
     labels = [_label(entry) for entry in intersections]
     sizes = [entry.size for entry in intersections]
+    int_index = list(range(n_intersections))
+    set_index = list(range(n_sets))
+    int_axis = "x" if vertical else "y"  # intersection-size value axis letter
+    set_axis = "y" if vertical else "x"  # set-size value axis letter
+
     if show_counts and show_percentages:
-        bar_text = "%{y:,} (%{customdata[2]}%)"
+        bar_text = f"%{{{int_axis}:,}} (%{{customdata[2]}}%)"
     elif show_counts:
-        bar_text = "%{y:,}"
+        bar_text = f"%{{{int_axis}:,}}"
     elif show_percentages:
         bar_text = "%{customdata[2]}%"
     else:
         bar_text = None
-    fig.add_trace(
-        go.Bar(
-            x=list(range(n_intersections)),
-            y=sizes,
-            width=0.6,
-            marker={"color": ink, "cornerradius": 4, "line": {"width": 0}},
-            customdata=[
-                [
-                    label,
-                    entry.degree,
-                    _percent(entry.size, total),
-                    f"{100 * deviation_map[frozenset(entry.sets)]:+.1f}",
-                ]
-                for label, entry in zip(labels, intersections, strict=True)
-            ],
-            hovertemplate=(
-                "<b>%{customdata[0]}</b><br>"
-                "Size: %{y:,} (%{customdata[2]}% of total)<br>"
-                "Degree: %{customdata[1]}<br>"
-                "Deviation: %{customdata[3]}%<extra></extra>"
-            ),
-            texttemplate=bar_text,
-            textposition="outside",
-            textfont={"size": 11, "color": th["secondary"]},
-            cliponaxis=False,
-            name="Intersection size",
-            meta="upset:intersection-bars",
-        ),
-        row=1,
-        col=2,
-    )
 
-    fig.add_trace(
-        go.Bar(
-            x=[size_of_set[name] for name in set_order],
-            y=list(range(n_sets)),
-            orientation="h",
-            width=0.6,
-            marker={"color": set_colors, "cornerradius": 4, "line": {"width": 0}},
-            customdata=[[name, _percent(size_of_set[name], total)] for name in set_order],
-            hovertemplate=(
-                "<b>%{customdata[0]}</b><br>"
-                "Size: %{x:,} (%{customdata[1]}% of total)<extra></extra>"
-            ),
-            name="Set size",
-            meta="upset:set-bars",
+    int_bar = go.Bar(
+        width=0.6,
+        marker={"color": ink, "cornerradius": 4, "line": {"width": 0}},
+        customdata=[
+            [
+                label,
+                entry.degree,
+                _percent(entry.size, total),
+                f"{100 * deviation_map[frozenset(entry.sets)]:+.1f}",
+            ]
+            for label, entry in zip(labels, intersections, strict=True)
+        ],
+        hovertemplate=(
+            "<b>%{customdata[0]}</b><br>"
+            f"Size: %{{{int_axis}:,}} (%{{customdata[2]}}% of total)<br>"
+            "Degree: %{customdata[1]}<br>"
+            "Deviation: %{customdata[3]}%<extra></extra>"
         ),
-        row=2,
-        col=1,
+        texttemplate=bar_text,
+        textposition="outside",
+        textfont={"size": 11, "color": th["secondary"]},
+        cliponaxis=False,
+        name="Intersection size",
+        meta="upset:intersection-bars",
     )
+    if vertical:
+        int_bar.update(x=sizes, y=int_index, orientation="h")
+    else:
+        int_bar.update(x=int_index, y=sizes)
+    fig.add_trace(int_bar, **int_rc)
 
+    set_bar = go.Bar(
+        width=0.6,
+        marker={"color": set_colors, "cornerradius": 4, "line": {"width": 0}},
+        customdata=[[name, _percent(size_of_set[name], total)] for name in set_order],
+        hovertemplate=(
+            "<b>%{customdata[0]}</b><br>"
+            f"Size: %{{{set_axis}:,}} (%{{customdata[1]}}% of total)<extra></extra>"
+        ),
+        name="Set size",
+        meta="upset:set-bars",
+    )
+    set_sizes = [size_of_set[name] for name in set_order]
+    if vertical:
+        set_bar.update(x=set_index, y=set_sizes)
+    else:
+        set_bar.update(x=set_sizes, y=set_index, orientation="h")
+    fig.add_trace(set_bar, **set_rc)
+
+    # Matrix cells: the intersection index runs along x (horizontal) or y
+    # (vertical); the set index runs along the perpendicular axis.
+    def _xy(int_idx, set_idx):
+        return (set_idx, int_idx) if vertical else (int_idx, set_idx)
+
+    bg = [_xy(c, r) for c in range(n_intersections) for r in range(n_sets)]
     fig.add_trace(
         go.Scatter(
-            x=[column for column in range(n_intersections) for _row in range(n_sets)],
-            y=[row for _column in range(n_intersections) for row in range(n_sets)],
+            x=[p[0] for p in bg],
+            y=[p[1] for p in bg],
             mode="markers",
             marker={"color": inactive, "size": dot_px},
             hoverinfo="skip",
             name="Non-members",
             meta="upset:matrix-background",
         ),
-        row=2,
-        col=2,
+        **mat_rc,
     )
 
-    connector_x: list[float | None] = []
-    connector_y: list[float | None] = []
+    connector_a: list[float | None] = []
+    connector_b: list[float | None] = []
     for column, entry in enumerate(intersections):
         if entry.degree < 2:
             continue
         rows = [row_of_set[name] for name in entry.sets]
-        connector_x += [column, column, None]
-        connector_y += [min(rows), max(rows), None]
-    if connector_x:
+        lo, hi = min(rows), max(rows)
+        if vertical:
+            connector_a += [lo, hi, None]  # x spans the set columns
+            connector_b += [column, column, None]  # y is the intersection row
+        else:
+            connector_a += [column, column, None]  # x is the intersection column
+            connector_b += [lo, hi, None]  # y spans the set rows
+    if connector_a:
         fig.add_trace(
             go.Scatter(
-                x=connector_x,
-                y=connector_y,
+                x=connector_a,
+                y=connector_b,
                 mode="lines",
                 line={"color": ink, "width": connector_px},
                 hoverinfo="skip",
                 name="Connectors",
                 meta="upset:matrix-connectors",
             ),
-            row=2,
-            col=2,
+            **mat_rc,
         )
 
     dot_x: list[int] = []
@@ -389,8 +428,9 @@ def create_upset(
     dot_customdata: list[list[str]] = []
     for column, (label, entry) in enumerate(zip(labels, intersections, strict=True)):
         for name in entry.sets:
-            dot_x.append(column)
-            dot_y.append(row_of_set[name])
+            x, y = _xy(column, row_of_set[name])
+            dot_x.append(x)
+            dot_y.append(y)
             dot_colors.append(set_colors[row_of_set[name]])
             dot_customdata.append([name, f"{label} ({entry.size:,})"])
     if dot_x:
@@ -405,26 +445,41 @@ def create_upset(
                 name="Members",
                 meta="upset:matrix-dots",
             ),
-            row=2,
-            col=2,
+            **mat_rc,
         )
 
-    matrix = fig.get_subplot(2, 2)
+    # Zebra bands shade alternating set lanes: rows (horizontal) or columns
+    # (vertical), spanning the perpendicular matrix domain.
+    matrix = fig.get_subplot(mat_rc["row"], mat_rc["col"])
     matrix_x = matrix.yaxis.anchor or "x"
     matrix_y = matrix.xaxis.anchor or "y"
-    for row in range(0, n_sets, 2):
-        fig.add_shape(
-            type="rect",
-            xref=f"{matrix_x} domain",
-            yref=matrix_y,
-            x0=0,
-            x1=1,
-            y0=row - 0.5,
-            y1=row + 0.5,
-            fillcolor=th["band"],
-            line={"width": 0},
-            layer="below",
-        )
+    for lane in range(0, n_sets, 2):
+        if vertical:
+            fig.add_shape(
+                type="rect",
+                xref=matrix_x,
+                yref=f"{matrix_y} domain",
+                x0=lane - 0.5,
+                x1=lane + 0.5,
+                y0=0,
+                y1=1,
+                fillcolor=th["band"],
+                line={"width": 0},
+                layer="below",
+            )
+        else:
+            fig.add_shape(
+                type="rect",
+                xref=f"{matrix_x} domain",
+                yref=matrix_y,
+                x0=0,
+                x1=1,
+                y0=lane - 0.5,
+                y1=lane + 0.5,
+                fillcolor=th["band"],
+                line={"width": 0},
+                layer="below",
+            )
 
     if description is None:
         biggest = max(range(n_intersections), key=lambda i: sizes[i])
@@ -436,11 +491,14 @@ def create_upset(
 
     max_size = max(sizes)
     headroom = 1.18 if (show_counts or show_percentages) else 1.05
-    intersection_range = [0, max_size * headroom if max_size > 0 else 1]
-    column_range = [-0.5, n_intersections - 0.5]
-    row_range = [n_sets - 0.5, -0.5]
+    size_range = [0, max_size * headroom if max_size > 0 else 1]
+    int_index_range = [-0.5, n_intersections - 0.5]
+    set_index_range = [-0.5, n_sets - 0.5]
+    int_rows_reversed = [n_intersections - 0.5, -0.5]
+    set_rows_reversed = [n_sets - 0.5, -0.5]
     tick_font = {"size": 11, "color": th["muted"]}
     title_font = {"size": 12, "color": th["secondary"]}
+    set_name_font = {"size": 12, "color": th["secondary"]}
     if intersection_title is _AUTO:
         intersection_title = {
             "distinct": "Intersection size",
@@ -450,77 +508,144 @@ def create_upset(
     if set_size_title is _AUTO:
         set_size_title = "Set size"
 
-    fig.update_xaxes(
-        row=1,
-        col=2,
-        range=column_range,
-        showticklabels=False,
-        ticks="",
-        showgrid=False,
-        zeroline=False,
-    )
-    fig.update_yaxes(
-        row=1,
-        col=2,
-        range=intersection_range,
-        title_text=intersection_title,
-        title_font=title_font,
-        title_standoff=8,
-        showticklabels=show_intersection_ticks,
-        tickfont=tick_font,
-        gridcolor=th["grid"],
-        gridwidth=1,
-        zeroline=True,
-        zerolinecolor=th["baseline"],
-        zerolinewidth=1,
-        nticks=5,
-        automargin=True,
-    )
-    fig.update_xaxes(
-        row=2,
-        col=1,
-        autorange="reversed",
-        title_text=set_size_title,
-        title_font=title_font,
-        title_standoff=8,
-        showticklabels=show_set_size_ticks,
-        tickfont=tick_font,
-        gridcolor=th["grid"],
-        gridwidth=1,
-        zeroline=False,
-        nticks=4,
-        automargin=True,
-    )
-    fig.update_yaxes(
-        row=2,
-        col=1,
-        range=row_range,
-        tickvals=list(range(n_sets)),
-        ticktext=list(set_order),
-        tickfont={"size": 12, "color": th["secondary"]},
-        ticks="",
-        showgrid=False,
-        zeroline=False,
-        automargin=True,
-    )
-    fig.update_xaxes(
-        row=2,
-        col=2,
-        range=column_range,
-        showticklabels=False,
-        ticks="",
-        showgrid=False,
-        zeroline=False,
-    )
-    fig.update_yaxes(
-        row=2,
-        col=2,
-        range=row_range,
-        showticklabels=False,
-        ticks="",
-        showgrid=False,
-        zeroline=False,
-    )
+    if vertical:
+        # Set-size bars (top): shared x = set columns (hidden), y = size.
+        fig.update_xaxes(
+            **set_rc,
+            range=set_index_range,
+            showticklabels=False,
+            ticks="",
+            showgrid=False,
+            zeroline=False,
+        )
+        fig.update_yaxes(
+            **set_rc,
+            range=size_range,
+            title_text=set_size_title,
+            title_font=title_font,
+            title_standoff=8,
+            showticklabels=show_set_size_ticks,
+            tickfont=tick_font,
+            gridcolor=th["grid"],
+            gridwidth=1,
+            zeroline=True,
+            zerolinecolor=th["baseline"],
+            zerolinewidth=1,
+            nticks=4,
+            automargin=True,
+        )
+        # Intersection-size bars (right): shared y = intersection rows (hidden), x = size.
+        fig.update_yaxes(
+            **int_rc,
+            range=int_rows_reversed,
+            showticklabels=False,
+            ticks="",
+            showgrid=False,
+            zeroline=False,
+        )
+        fig.update_xaxes(
+            **int_rc,
+            range=size_range,
+            title_text=intersection_title,
+            title_font=title_font,
+            title_standoff=8,
+            showticklabels=show_intersection_ticks,
+            tickfont=tick_font,
+            gridcolor=th["grid"],
+            gridwidth=1,
+            zeroline=True,
+            zerolinecolor=th["baseline"],
+            zerolinewidth=1,
+            nticks=5,
+            automargin=True,
+        )
+        # Matrix (bottom-left): x = set columns with names, y = intersection rows.
+        fig.update_xaxes(
+            **mat_rc,
+            range=set_index_range,
+            tickvals=set_index,
+            ticktext=list(set_order),
+            tickfont=set_name_font,
+            ticks="",
+            showgrid=False,
+            zeroline=False,
+            automargin=True,
+        )
+        fig.update_yaxes(
+            **mat_rc,
+            range=int_rows_reversed,
+            showticklabels=False,
+            ticks="",
+            showgrid=False,
+            zeroline=False,
+            automargin=True,
+        )
+    else:
+        fig.update_xaxes(
+            **int_rc,
+            range=int_index_range,
+            showticklabels=False,
+            ticks="",
+            showgrid=False,
+            zeroline=False,
+        )
+        fig.update_yaxes(
+            **int_rc,
+            range=size_range,
+            title_text=intersection_title,
+            title_font=title_font,
+            title_standoff=8,
+            showticklabels=show_intersection_ticks,
+            tickfont=tick_font,
+            gridcolor=th["grid"],
+            gridwidth=1,
+            zeroline=True,
+            zerolinecolor=th["baseline"],
+            zerolinewidth=1,
+            nticks=5,
+            automargin=True,
+        )
+        fig.update_xaxes(
+            **set_rc,
+            autorange="reversed",
+            title_text=set_size_title,
+            title_font=title_font,
+            title_standoff=8,
+            showticklabels=show_set_size_ticks,
+            tickfont=tick_font,
+            gridcolor=th["grid"],
+            gridwidth=1,
+            zeroline=False,
+            nticks=4,
+            automargin=True,
+        )
+        fig.update_yaxes(
+            **set_rc,
+            range=set_rows_reversed,
+            tickvals=set_index,
+            ticktext=list(set_order),
+            tickfont=set_name_font,
+            ticks="",
+            showgrid=False,
+            zeroline=False,
+            automargin=True,
+        )
+        fig.update_xaxes(
+            **mat_rc,
+            range=int_index_range,
+            showticklabels=False,
+            ticks="",
+            showgrid=False,
+            zeroline=False,
+        )
+        fig.update_yaxes(
+            **mat_rc,
+            range=set_rows_reversed,
+            showticklabels=False,
+            ticks="",
+            showgrid=False,
+            zeroline=False,
+        )
 
     fig.update_layout(
         showlegend=False,

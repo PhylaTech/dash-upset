@@ -101,6 +101,7 @@
                 <li><a href="#set_size_title">set_size_title</a></li>
                 <li><a href="#show_intersection_ticks">show_intersection_ticks</a></li>
                 <li><a href="#show_set_size_ticks">show_set_size_ticks</a></li>
+                <li><a href="#orientation">orientation</a></li>
                 <li><a href="#size">width / height</a></li>
                 <li><a href="#template">template</a></li>
             </ul>
@@ -297,6 +298,11 @@ def show(selection):
                 <article class="prop" id="show_set_size_ticks">
                     <div class="prop-head"><h3>show_set_size_ticks<a class="anchor" href="#show_set_size_ticks">#</a></h3><span class="pill type">bool</span><span class="pill default">True</span></div>
                     <div class="prop-body"><p>Show the numeric tick labels on the set-size axis.</p></div>
+                </article>
+
+                <article class="prop" id="orientation">
+                    <div class="prop-head"><h3>orientation<a class="anchor" href="#orientation">#</a></h3><span class="pill type">str</span><span class="pill default">"horizontal"</span></div>
+                    <div class="prop-body"><p><code>"horizontal"</code> (default) lays intersections along the x-axis as columns, with set-size bars on the left. <code>"vertical"</code> transposes the plot: sets become columns, intersections become rows, set-size bars sit on top, and intersection-size bars extend to the right &mdash; handy for many intersections in a narrow width.</p></div>
                 </article>
 
                 <article class="prop" id="size">

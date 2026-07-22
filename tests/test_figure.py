@@ -274,6 +274,27 @@ def test_axis_titles_hidden(sample):
     assert all(ax.title.text != "Intersection size" for ax in fig.select_yaxes())
 
 
+def test_orientation_horizontal_default(sample):
+    fig = create_upset(sample)
+    assert trace(fig, "upset:intersection-bars").orientation in (None, "v")
+    assert trace(fig, "upset:set-bars").orientation == "h"
+
+
+def test_orientation_vertical_transposes(sample):
+    fig = create_upset(sample, orientation="vertical")
+    # Intersection bars become horizontal; set bars become vertical.
+    assert trace(fig, "upset:intersection-bars").orientation == "h"
+    assert trace(fig, "upset:set-bars").orientation in (None, "v")
+    # Matrix dots' x now indexes sets (0..n_sets-1), not intersections.
+    dots = trace(fig, "upset:matrix-dots")
+    assert max(dots.x) <= len(sample.set_names) - 1
+
+
+def test_invalid_orientation_rejected(sample):
+    with pytest.raises(ValueError, match="orientation must be"):
+        create_upset(sample, orientation="diagonal")
+
+
 def test_description_auto_generated(sample):
     desc = create_upset(sample).layout.meta["description"]
     assert desc.startswith("UpSet plot of")
