@@ -3,6 +3,16 @@ name: release-please
 on:
   push:
     branches: [main]
+  # Manual re-publish escape hatch: re-run publishing for an already-released
+  # tag without cutting a new release (e.g. after fixing PyPI trusted-publisher
+  # config). release-please only fires publish when it *creates* a release, so
+  # a failed first upload can't otherwise be retried by re-running the release.
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag or ref to build and publish (e.g. v0.1.0). Defaults to the branch this runs on."
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -24,16 +34,18 @@ jobs:
   # created by release-please uses the default GITHUB_TOKEN, and events raised
   # by GITHUB_TOKEN do not trigger other workflows (GitHub's recursion guard),
   # so a standalone `on: release` workflow would never fire. Gate a publish job
-  # on release-please's release_created output instead.
+  # on release-please's release_created output -- or on a manual dispatch.
   publish:
     needs: release-please
-    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    if: ${{ needs.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write   # trusted publishing (no API token needed)
       contents: read
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -48,5 +60,5 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         # Configure trusted publishing at:
-        # https://pypi.org/manage/project/dash-upset/settings/publishing/
+        # https://pypi.org/manage/account/publishing/  (pending publisher)
         # Workflow name field: release-please.yml   (no environment configured)
