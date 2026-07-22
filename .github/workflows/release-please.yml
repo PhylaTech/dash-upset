@@ -29,7 +29,6 @@ jobs:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created == 'true' }}
     runs-on: ubuntu-latest
-    environment: release
     permissions:
       id-token: write   # trusted publishing (no API token needed)
       contents: read
@@ -50,4 +49,4 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         # Configure trusted publishing at:
         # https://pypi.org/manage/project/dash-upset/settings/publishing/
-        # Workflow name field: release-please.yml   Environment name: release
+        # Workflow name field: release-please.yml   (no environment configured)
