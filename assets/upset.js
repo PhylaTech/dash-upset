@@ -214,53 +214,70 @@
         var dotPx = 13;
         var modeTitle = mode === "union" ? "Union size" : mode === "intersect" ? "Intersection size (intersect)" : "Intersection size";
 
+        var vertical = opts.orientation === "vertical";
+        var intLetter = vertical ? "x" : "y"; // intersection-size value axis
+        var setLetter = vertical ? "y" : "x"; // set-size value axis
+        var matX = vertical ? "x" : "x3"; // matrix axes: vertical reuses
+        var matY = vertical ? "y2" : "y3"; //   x (set cols) + y2 (int rows)
+        // Map a (intersection index c, set row r) matrix cell to x/y.
+        function cellX(c, r) { return vertical ? r : c; }
+        function cellY(c, r) { return vertical ? c : r; }
+
         // Bar labels: mirror figure.py's texttemplate choice.
         var barText = null;
-        if (showCounts && showPct) barText = "%{y:,} (%{customdata[2]}%)";
-        else if (showCounts) barText = "%{y:,}";
+        if (showCounts && showPct) barText = "%{" + intLetter + ":,} (%{customdata[2]}%)";
+        else if (showCounts) barText = "%{" + intLetter + ":,}";
         else if (showPct) barText = "%{customdata[2]}%";
 
         var traces = [];
+        var intIdx = subsets.map(function (_, i) { return i; });
+        var setIdx = setOrder.map(function (_, r) { return r; });
+        var setSizesArr = setOrder.map(function (n) { return sizeOfSet[n]; });
 
-        // Intersection-size bars (top right)
-        traces.push({
+        // Intersection-size bars
+        var intBar = {
             type: "bar", meta: "upset:intersection-bars",
-            x: subsets.map(function (_, i) { return i; }),
-            y: sizes,
             width: 0.6,
             marker: { color: ink, cornerradius: 4, line: { width: 0 } },
             customdata: subsets.map(function (e) {
                 var dev = 100 * devMap[comboKey(e.sets)];
                 return [labelOf(e.sets), e.sets.length, percent(e.size, total), (dev >= 0 ? "+" : "") + dev.toFixed(1)];
             }),
-            hovertemplate: "<b>%{customdata[0]}</b><br>Size: %{y:,} (%{customdata[2]}% of total)<br>Degree: %{customdata[1]}<br>Deviation: %{customdata[3]}%<extra></extra>",
+            hovertemplate: "<b>%{customdata[0]}</b><br>Size: %{" + intLetter + ":,} (%{customdata[2]}% of total)<br>Degree: %{customdata[1]}<br>Deviation: %{customdata[3]}%<extra></extra>",
             texttemplate: barText,
             textposition: "outside",
             textfont: { size: 11, color: th.secondary },
             cliponaxis: false,
-            xaxis: "x", yaxis: "y",
-        });
+        };
+        if (vertical) {
+            intBar.x = sizes; intBar.y = intIdx; intBar.orientation = "h"; intBar.xaxis = "x2"; intBar.yaxis = "y2";
+        } else {
+            intBar.x = intIdx; intBar.y = sizes; intBar.xaxis = "x"; intBar.yaxis = "y";
+        }
+        traces.push(intBar);
 
-        // Set-size bars (bottom left, growing leftward)
-        traces.push({
+        // Set-size bars
+        var setBar = {
             type: "bar", meta: "upset:set-bars",
-            orientation: "h",
-            y: setOrder.map(function (_, r) { return r; }),
-            x: setOrder.map(function (n) { return sizeOfSet[n]; }),
             width: 0.6,
             marker: { color: setColors, cornerradius: 4, line: { width: 0 } },
             customdata: setOrder.map(function (n) { return [n, percent(sizeOfSet[n], total)]; }),
-            hovertemplate: "<b>%{customdata[0]}</b><br>Size: %{x:,} (%{customdata[1]}% of total)<extra></extra>",
-            xaxis: "x2", yaxis: "y2",
-        });
+            hovertemplate: "<b>%{customdata[0]}</b><br>Size: %{" + setLetter + ":,} (%{customdata[1]}% of total)<extra></extra>",
+        };
+        if (vertical) {
+            setBar.x = setIdx; setBar.y = setSizesArr; setBar.xaxis = "x"; setBar.yaxis = "y";
+        } else {
+            setBar.orientation = "h"; setBar.y = setIdx; setBar.x = setSizesArr; setBar.xaxis = "x2"; setBar.yaxis = "y2";
+        }
+        traces.push(setBar);
 
         // Matrix background dots (every set x every intersection)
         var bgX = [], bgY = [];
-        for (var c = 0; c < nInt; c++) for (var r = 0; r < nSets; r++) { bgX.push(c); bgY.push(r); }
+        for (var c = 0; c < nInt; c++) for (var r = 0; r < nSets; r++) { bgX.push(cellX(c, r)); bgY.push(cellY(c, r)); }
         traces.push({
             type: "scatter", mode: "markers", meta: "upset:matrix-background", x: bgX, y: bgY,
             marker: { color: inactive, size: dotPx }, hoverinfo: "skip",
-            xaxis: "x3", yaxis: "y3",
+            xaxis: matX, yaxis: matY,
         });
 
         // Connector lines for multi-set intersections
@@ -268,14 +285,15 @@
         subsets.forEach(function (e, c) {
             if (e.sets.length < 2) return;
             var rows = e.sets.map(function (n) { return rowOfSet[n]; });
-            connX.push(c, c, null);
-            connY.push(Math.min.apply(null, rows), Math.max.apply(null, rows), null);
+            var lo = Math.min.apply(null, rows), hi = Math.max.apply(null, rows);
+            if (vertical) { connX.push(lo, hi, null); connY.push(c, c, null); }
+            else { connX.push(c, c, null); connY.push(lo, hi, null); }
         });
         if (connX.length) {
             traces.push({
                 type: "scatter", mode: "lines", meta: "upset:matrix-connectors", x: connX, y: connY,
                 line: { color: ink, width: 2.5 }, hoverinfo: "skip",
-                xaxis: "x3", yaxis: "y3",
+                xaxis: matX, yaxis: matY,
             });
         }
 
@@ -283,7 +301,7 @@
         var dotX = [], dotY = [], dotCd = [], dotColors = [];
         subsets.forEach(function (e, c) {
             e.sets.forEach(function (n) {
-                dotX.push(c); dotY.push(rowOfSet[n]);
+                dotX.push(cellX(c, rowOfSet[n])); dotY.push(cellY(c, rowOfSet[n]));
                 dotColors.push(setColors[rowOfSet[n]]);
                 dotCd.push([n, labelOf(e.sets) + " (" + e.size.toLocaleString() + ")"]);
             });
@@ -293,19 +311,30 @@
                 type: "scatter", mode: "markers", meta: "upset:matrix-dots", x: dotX, y: dotY, customdata: dotCd,
                 marker: { color: dotColors, size: dotPx },
                 hovertemplate: "<b>%{customdata[0]}</b><br>%{customdata[1]}<extra></extra>",
-                xaxis: "x3", yaxis: "y3",
+                xaxis: matX, yaxis: matY,
             });
         }
 
         var colRange = [-0.5, nInt - 0.5];
-        var rowRange = [nSets - 0.5, -0.5];
+        var setColRange = [-0.5, nSets - 0.5];
+        var setRowsRev = [nSets - 0.5, -0.5];
+        var intRowsRev = [nInt - 0.5, -0.5];
         var headroom = showCounts || showPct ? 1.18 : 1.05;
+        var sizeRange = [0, maxSize > 0 ? maxSize * headroom : 1];
         var shapes = [];
         for (var rr = 0; rr < nSets; rr += 2) {
-            shapes.push({
-                type: "rect", xref: "x3 domain", yref: "y3", x0: 0, x1: 1,
-                y0: rr - 0.5, y1: rr + 0.5, fillcolor: th.band, line: { width: 0 }, layer: "below",
-            });
+            if (vertical) {
+                shapes.push({
+                    type: "rect", xref: matX, yref: matY + " domain",
+                    x0: rr - 0.5, x1: rr + 0.5, y0: 0, y1: 1,
+                    fillcolor: th.band, line: { width: 0 }, layer: "below",
+                });
+            } else {
+                shapes.push({
+                    type: "rect", xref: matX + " domain", yref: matY, x0: 0, x1: 1,
+                    y0: rr - 0.5, y1: rr + 0.5, fillcolor: th.band, line: { width: 0 }, layer: "below",
+                });
+            }
         }
 
         // Axis titles: undefined -> automatic; a string overrides; null/"" hides.
@@ -316,6 +345,10 @@
         var titleFont = { size: 12, color: th.secondary };
 
         var hasTitle = !!opts.title;
+        var muted = { size: 11, color: th.muted };
+        var secondaryFont = { size: 12, color: th.secondary };
+        var intTitleObj = intersectionTitle ? { text: intersectionTitle, font: titleFont, standoff: 8 } : undefined;
+        var setTitleObj = setSizeTitle ? { text: setSizeTitle, font: titleFont, standoff: 8 } : undefined;
         var layout = {
             showlegend: false,
             margin: { l: 12, r: 16, t: hasTitle ? 52 : 16, b: 12 },
@@ -326,13 +359,22 @@
             hoverlabel: { font: { size: 12 } },
             bargap: 0.3,
             shapes: shapes,
-            xaxis: { domain: [0.26, 1], anchor: "y", range: colRange, showticklabels: false, ticks: "", showgrid: false, zeroline: false },
-            yaxis: { domain: [0.63, 1], anchor: "x", range: [0, maxSize > 0 ? maxSize * headroom : 1], title: intersectionTitle ? { text: intersectionTitle, font: titleFont, standoff: 8 } : undefined, showticklabels: showIntTicks, tickfont: { size: 11, color: th.muted }, gridcolor: th.grid, zeroline: true, zerolinecolor: th.baseline, nticks: 5, automargin: true },
-            xaxis2: { domain: [0, 0.23], anchor: "y2", autorange: "reversed", title: setSizeTitle ? { text: setSizeTitle, font: titleFont, standoff: 8 } : undefined, showticklabels: showSetTicks, tickfont: { size: 11, color: th.muted }, gridcolor: th.grid, zeroline: false, nticks: 3, automargin: true },
-            yaxis2: { domain: [0, 0.57], anchor: "x2", range: rowRange, tickvals: setOrder.map(function (_, r) { return r; }), ticktext: setOrder, tickfont: { size: 12, color: th.secondary }, ticks: "", showgrid: false, zeroline: false, automargin: true },
-            xaxis3: { domain: [0.26, 1], anchor: "y3", matches: "x", range: colRange, showticklabels: false, ticks: "", showgrid: false, zeroline: false },
-            yaxis3: { domain: [0, 0.57], anchor: "x3", matches: "y2", range: rowRange, showticklabels: false, ticks: "", showgrid: false, zeroline: false },
         };
+        if (vertical) {
+            // Set bars top-left (x set-cols + y value), matrix bottom-left
+            // (x + y2), intersection bars bottom-right (x2 value + y2 rows).
+            layout.xaxis = { domain: [0, 0.72], anchor: "y2", range: setColRange, tickvals: setIdx, ticktext: setOrder, tickfont: secondaryFont, ticks: "", showgrid: false, zeroline: false, automargin: true };
+            layout.yaxis = { domain: [0.64, 1], anchor: "x", range: sizeRange, title: setTitleObj, showticklabels: showSetTicks, tickfont: muted, gridcolor: th.grid, zeroline: true, zerolinecolor: th.baseline, nticks: 4, automargin: true };
+            layout.xaxis2 = { domain: [0.77, 1], anchor: "y2", range: sizeRange, title: intTitleObj, showticklabels: showIntTicks, tickfont: muted, gridcolor: th.grid, zeroline: true, zerolinecolor: th.baseline, nticks: 5, automargin: true };
+            layout.yaxis2 = { domain: [0, 0.6], anchor: "x", range: intRowsRev, showticklabels: false, ticks: "", showgrid: false, zeroline: false, automargin: true };
+        } else {
+            layout.xaxis = { domain: [0.26, 1], anchor: "y", range: colRange, showticklabels: false, ticks: "", showgrid: false, zeroline: false };
+            layout.yaxis = { domain: [0.63, 1], anchor: "x", range: sizeRange, title: intTitleObj, showticklabels: showIntTicks, tickfont: muted, gridcolor: th.grid, zeroline: true, zerolinecolor: th.baseline, nticks: 5, automargin: true };
+            layout.xaxis2 = { domain: [0, 0.23], anchor: "y2", autorange: "reversed", title: setTitleObj, showticklabels: showSetTicks, tickfont: muted, gridcolor: th.grid, zeroline: false, nticks: 3, automargin: true };
+            layout.yaxis2 = { domain: [0, 0.57], anchor: "x2", range: setRowsRev, tickvals: setIdx, ticktext: setOrder, tickfont: secondaryFont, ticks: "", showgrid: false, zeroline: false, automargin: true };
+            layout.xaxis3 = { domain: [0.26, 1], anchor: "y3", matches: "x", range: colRange, showticklabels: false, ticks: "", showgrid: false, zeroline: false };
+            layout.yaxis3 = { domain: [0, 0.57], anchor: "x3", matches: "y2", range: setRowsRev, showticklabels: false, ticks: "", showgrid: false, zeroline: false };
+        }
         if (hasTitle) {
             layout.title = { text: opts.title, x: 0, xref: "paper", xanchor: "left", font: { size: 15, color: th.ink } };
         }
@@ -352,15 +394,17 @@
                 ") across " + nInt + " intersections. The largest shown intersection is " +
                 bLabel + " with " + (sizes[bIdx] || 0).toLocaleString() + " elements.";
         }
-        layout.meta = { description: description };
+        layout.meta = { description: description, orientation: vertical ? "vertical" : "horizontal" };
 
         return { data: traces, layout: layout, config: { responsive: true, displayModeBar: false } };
     }
 
     // Map a plotly click event to the component's selection properties, exactly
     // as the compiled DashUpset React component does (keyed on trace meta).
-    // Also returns `target` (which marks to highlight) for applyHighlight.
-    function selectionFromClick(point) {
+    // `target` = {type, index}: index is the intersection/set ordinal, matched
+    // to the right dot axis by orientation. `vertical` swaps which axis carries
+    // the intersection value + index.
+    function selectionFromClick(point, vertical) {
         if (!point) return null;
         var meta = point.data && point.data.meta;
         var cd = point.customdata || [];
@@ -371,8 +415,8 @@
             var label = cd.length ? cd[0] : null;
             return {
                 prop: "selected_intersection",
-                value: { label: label, sets: setsFromLabel(label), size: point.y },
-                target: { type: "intersection", column: point.pointNumber },
+                value: { label: label, sets: setsFromLabel(label), size: vertical ? point.x : point.y },
+                target: { type: "intersection", index: point.pointNumber },
             };
         }
         if (meta === "upset:matrix-dots") {
@@ -382,21 +426,22 @@
             return {
                 prop: "selected_intersection",
                 value: { label: lbl, sets: setsFromLabel(lbl) },
-                target: { type: "intersection", column: point.x },
+                target: { type: "intersection", index: vertical ? point.y : point.x },
             };
         }
         if (meta === "upset:set-bars") {
             var name = cd.length ? cd[0] : null;
             return name
-                ? { prop: "selected_sets", value: [name], target: { type: "sets", row: point.pointNumber } }
+                ? { prop: "selected_sets", value: [name], target: { type: "sets", index: point.pointNumber } }
                 : null;
         }
         return null;
     }
 
     // Recolor the selected marks over base colors (a {meta: colorOrArray} map
-    // captured at render). Mirrors the compiled component's highlight.
-    function applyHighlight(gd, baseColors, target, color) {
+    // captured at render). Mirrors the compiled component's highlight; the dot
+    // axis carrying the intersection/set index swaps with orientation.
+    function applyHighlight(gd, baseColors, target, color, vertical) {
         if (!gd || !gd.data || !global.Plotly) return;
         function idx(meta) { return gd.data.findIndex(function (t) { return t.meta === meta; }); }
         function arr(c, n) {
@@ -405,24 +450,28 @@
         }
         var bi = idx("upset:intersection-bars");
         if (bi >= 0) {
-            var c1 = arr(baseColors["upset:intersection-bars"], gd.data[bi].y.length);
-            if (target && target.type === "intersection" && target.column != null) c1[target.column] = color;
+            var c1 = arr(baseColors["upset:intersection-bars"], gd.data[bi].x.length);
+            if (target && target.type === "intersection" && target.index != null) c1[target.index] = color;
             global.Plotly.restyle(gd, { "marker.color": [c1] }, [bi]);
         }
         var si = idx("upset:set-bars");
         if (si >= 0) {
-            var c2 = arr(baseColors["upset:set-bars"], gd.data[si].y.length);
-            if (target && target.type === "sets" && target.row != null) c2[target.row] = color;
+            var c2 = arr(baseColors["upset:set-bars"], gd.data[si].x.length);
+            if (target && target.type === "sets" && target.index != null) c2[target.index] = color;
             global.Plotly.restyle(gd, { "marker.color": [c2] }, [si]);
         }
         var di = idx("upset:matrix-dots");
         if (di >= 0) {
             var xs = gd.data[di].x, ys = gd.data[di].y;
+            var intAxis = vertical ? ys : xs;
+            var setAxis = vertical ? xs : ys;
             var c3 = arr(baseColors["upset:matrix-dots"], xs.length);
             for (var i = 0; i < xs.length; i++) {
-                var hitCol = target && target.type === "intersection" && xs[i] === target.column;
-                var hitRow = target && target.type === "sets" && ys[i] === target.row;
-                if (hitCol || hitRow) c3[i] = color;
+                var hit =
+                    target &&
+                    ((target.type === "intersection" && intAxis[i] === target.index) ||
+                        (target.type === "sets" && setAxis[i] === target.index));
+                if (hit) c3[i] = color;
             }
             global.Plotly.restyle(gd, { "marker.color": [c3] }, [di]);
         }
