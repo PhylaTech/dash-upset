@@ -168,7 +168,8 @@
     // highlight_selection is on, recolors the selected marks.
     function onClick(data) {
         var point = data && data.points && data.points[0];
-        var sel = window.DashUpset.selectionFromClick(point);
+        var vertical = el.orientation.value === "vertical";
+        var sel = window.DashUpset.selectionFromClick(point, vertical);
         if (!sel) return;
         if (sel.prop === "selected_intersection") {
             el.roIntersection.textContent = JSON.stringify(sel.value);
@@ -177,7 +178,7 @@
         }
         if (el.highlight.checked && sel.target) {
             var color = (el.selColor.value || "").trim() || "#9c5a3c";
-            window.DashUpset.applyHighlight(root, baseColors, sel.target, color);
+            window.DashUpset.applyHighlight(root, baseColors, sel.target, color, vertical);
         }
     }
 

@@ -394,15 +394,17 @@
                 ") across " + nInt + " intersections. The largest shown intersection is " +
                 bLabel + " with " + (sizes[bIdx] || 0).toLocaleString() + " elements.";
         }
-        layout.meta = { description: description };
+        layout.meta = { description: description, orientation: vertical ? "vertical" : "horizontal" };
 
         return { data: traces, layout: layout, config: { responsive: true, displayModeBar: false } };
     }
 
     // Map a plotly click event to the component's selection properties, exactly
     // as the compiled DashUpset React component does (keyed on trace meta).
-    // Also returns `target` (which marks to highlight) for applyHighlight.
-    function selectionFromClick(point) {
+    // `target` = {type, index}: index is the intersection/set ordinal, matched
+    // to the right dot axis by orientation. `vertical` swaps which axis carries
+    // the intersection value + index.
+    function selectionFromClick(point, vertical) {
         if (!point) return null;
         var meta = point.data && point.data.meta;
         var cd = point.customdata || [];
@@ -413,8 +415,8 @@
             var label = cd.length ? cd[0] : null;
             return {
                 prop: "selected_intersection",
-                value: { label: label, sets: setsFromLabel(label), size: point.y },
-                target: { type: "intersection", column: point.pointNumber },
+                value: { label: label, sets: setsFromLabel(label), size: vertical ? point.x : point.y },
+                target: { type: "intersection", index: point.pointNumber },
             };
         }
         if (meta === "upset:matrix-dots") {
@@ -424,21 +426,22 @@
             return {
                 prop: "selected_intersection",
                 value: { label: lbl, sets: setsFromLabel(lbl) },
-                target: { type: "intersection", column: point.x },
+                target: { type: "intersection", index: vertical ? point.y : point.x },
             };
         }
         if (meta === "upset:set-bars") {
             var name = cd.length ? cd[0] : null;
             return name
-                ? { prop: "selected_sets", value: [name], target: { type: "sets", row: point.pointNumber } }
+                ? { prop: "selected_sets", value: [name], target: { type: "sets", index: point.pointNumber } }
                 : null;
         }
         return null;
     }
 
     // Recolor the selected marks over base colors (a {meta: colorOrArray} map
-    // captured at render). Mirrors the compiled component's highlight.
-    function applyHighlight(gd, baseColors, target, color) {
+    // captured at render). Mirrors the compiled component's highlight; the dot
+    // axis carrying the intersection/set index swaps with orientation.
+    function applyHighlight(gd, baseColors, target, color, vertical) {
         if (!gd || !gd.data || !global.Plotly) return;
         function idx(meta) { return gd.data.findIndex(function (t) { return t.meta === meta; }); }
         function arr(c, n) {
@@ -447,24 +450,28 @@
         }
         var bi = idx("upset:intersection-bars");
         if (bi >= 0) {
-            var c1 = arr(baseColors["upset:intersection-bars"], gd.data[bi].y.length);
-            if (target && target.type === "intersection" && target.column != null) c1[target.column] = color;
+            var c1 = arr(baseColors["upset:intersection-bars"], gd.data[bi].x.length);
+            if (target && target.type === "intersection" && target.index != null) c1[target.index] = color;
             global.Plotly.restyle(gd, { "marker.color": [c1] }, [bi]);
         }
         var si = idx("upset:set-bars");
         if (si >= 0) {
-            var c2 = arr(baseColors["upset:set-bars"], gd.data[si].y.length);
-            if (target && target.type === "sets" && target.row != null) c2[target.row] = color;
+            var c2 = arr(baseColors["upset:set-bars"], gd.data[si].x.length);
+            if (target && target.type === "sets" && target.index != null) c2[target.index] = color;
             global.Plotly.restyle(gd, { "marker.color": [c2] }, [si]);
         }
         var di = idx("upset:matrix-dots");
         if (di >= 0) {
             var xs = gd.data[di].x, ys = gd.data[di].y;
+            var intAxis = vertical ? ys : xs;
+            var setAxis = vertical ? xs : ys;
             var c3 = arr(baseColors["upset:matrix-dots"], xs.length);
             for (var i = 0; i < xs.length; i++) {
-                var hitCol = target && target.type === "intersection" && xs[i] === target.column;
-                var hitRow = target && target.type === "sets" && ys[i] === target.row;
-                if (hitCol || hitRow) c3[i] = color;
+                var hit =
+                    target &&
+                    ((target.type === "intersection" && intAxis[i] === target.index) ||
+                        (target.type === "sets" && setAxis[i] === target.index));
+                if (hit) c3[i] = color;
             }
             global.Plotly.restyle(gd, { "marker.color": [c3] }, [di]);
         }
