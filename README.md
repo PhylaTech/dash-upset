@@ -65,26 +65,28 @@ import pandas as pd
 from dash import Dash, Input, Output, callback, html
 from dash_upset import UpSet
 
+# One row per misclassified test example; 1 = that model got it wrong.
+# Overlaps are the shared hard cases; singletons are each model's blind spots.
 df = pd.DataFrame(
     {
-        "Action": [1, 1, 0, 1],
-        "Comedy": [1, 0, 1, 1],
-        "Drama": [0, 1, 1, 1],
+        "ResNet": [1, 1, 0, 1, 0, 1],
+        "ViT": [1, 1, 1, 0, 0, 1],
+        "XGBoost": [0, 1, 1, 1, 1, 0],
     }
 )
 
 app = Dash(__name__)
 app.layout = html.Div(
     [
-        UpSet(id="movies", data=df, sets=["Action", "Comedy", "Drama"]),
+        UpSet(id="errors", data=df, sets=["ResNet", "ViT", "XGBoost"]),
         html.Pre(id="out"),
     ]
 )
 
 
-@callback(Output("out", "children"), Input("movies", "selected_intersection"))
+@callback(Output("out", "children"), Input("errors", "selected_intersection"))
 def show(selection):
-    # {"label": "Action & Comedy", "sets": ["Action", "Comedy"], "size": 2}
+    # {"label": "ResNet & ViT", "sets": ["ResNet", "ViT"], "size": 2}
     return str(selection)
 
 

@@ -244,3 +244,52 @@ def test_color_overrides_theme(sample):
 def test_invalid_theme_rejected(sample):
     with pytest.raises(ValueError, match="theme must be one of"):
         create_upset(sample, theme="solarized")
+
+
+def test_palette_colors_sets(sample):
+    # A palette theme colors each set (its size bar + member dots) with the
+    # colorway, so the CVD palettes visibly differ from plain light/dark.
+    fig = create_upset(sample, theme="okabe-ito-light")
+    set_bars = trace(fig, "upset:set-bars")
+    assert set_bars.marker.color[0] == "#E69F00"  # per-set color array
+    dots = trace(fig, "upset:matrix-dots")
+    okabe = {"#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7"}
+    assert set(dots.marker.color) <= okabe
+
+
+def test_plain_theme_sets_stay_ink(sample):
+    set_bars = trace(create_upset(sample, theme="light"), "upset:set-bars")
+    assert set(set_bars.marker.color) == {"#0b0b0b"}
+
+
+def test_axis_titles_override(sample):
+    fig = create_upset(sample, intersection_title="Errors", set_size_title="Total wrong")
+    assert any(ax.title.text == "Errors" for ax in fig.select_yaxes())
+    assert any(ax.title.text == "Total wrong" for ax in fig.select_xaxes())
+
+
+def test_axis_titles_hidden(sample):
+    fig = create_upset(sample, intersection_title=None, set_size_title=None)
+    assert all(ax.title.text != "Set size" for ax in fig.select_xaxes())
+    assert all(ax.title.text != "Intersection size" for ax in fig.select_yaxes())
+
+
+def test_description_auto_generated(sample):
+    desc = create_upset(sample).layout.meta["description"]
+    assert desc.startswith("UpSet plot of")
+    assert "intersections" in desc
+
+
+def test_description_override(sample):
+    fig = create_upset(sample, description="Genes shared across three callers.")
+    assert fig.layout.meta["description"] == "Genes shared across three callers."
+
+
+def test_axis_ticks_hidden(sample):
+    fig = create_upset(sample, show_set_size_ticks=False, show_intersection_ticks=False)
+    set_axis = next(ax for ax in fig.select_xaxes() if ax.title.text == "Set size")
+    intersection_axis = next(
+        ax for ax in fig.select_yaxes() if ax.title.text == "Intersection size"
+    )
+    assert set_axis.showticklabels is False
+    assert intersection_axis.showticklabels is False

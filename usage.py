@@ -11,30 +11,38 @@ from dash import Dash, Input, Output, callback, html
 
 from dash_upset import UpSet
 
+# One row per misclassified test example; 1 = that model got it wrong.
 df = pd.DataFrame(
     {
-        "Action": [1, 1, 0, 1, 0, 1, 1, 0],
-        "Comedy": [1, 0, 1, 1, 0, 0, 1, 1],
-        "Drama": [0, 1, 1, 1, 1, 0, 0, 1],
+        "ResNet": [1, 1, 0, 1, 0, 1, 1, 0],
+        "ViT": [1, 0, 1, 1, 0, 0, 1, 1],
+        "XGBoost": [0, 1, 1, 1, 1, 0, 0, 1],
     }
 )
 
 app = Dash(__name__)
 app.layout = html.Div(
     [
-        UpSet(id="genes", data=df, sets=["Action", "Comedy", "Drama"], title="Movies"),
+        UpSet(
+            id="errors",
+            data=df,
+            sets=["ResNet", "ViT", "XGBoost"],
+            title="Model error sets",
+            highlight_selection=True,
+            selection_color="#d55e00",
+        ),
         html.Pre(id="out-intersection", children="intersection: (click a bar or dot)"),
         html.Pre(id="out-sets", children="sets: (click a set-size bar)"),
     ]
 )
 
 
-@callback(Output("out-intersection", "children"), Input("genes", "selected_intersection"))
+@callback(Output("out-intersection", "children"), Input("errors", "selected_intersection"))
 def show_intersection(selection):
     return f"intersection: {selection}"
 
 
-@callback(Output("out-sets", "children"), Input("genes", "selected_sets"))
+@callback(Output("out-sets", "children"), Input("errors", "selected_sets"))
 def show_sets(selection):
     return f"sets: {selection}"
 
