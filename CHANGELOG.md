@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/PhylaTech/dash-upset/compare/v0.1.0...v0.1.1) (2026-07-22)
+
+
+### Documentation
+
+* make README user-facing; drop pre-1.0 admonition ([198a4bc](https://github.com/PhylaTech/dash-upset/commit/198a4bc1c95990ef1969cf21669dcb62f498f9e6))
+* user-facing polish (drop pre-1.0 admonition, trim self-explanatory prose, install caveat) ([75089b7](https://github.com/PhylaTech/dash-upset/commit/75089b7025f660bc815d7e66622ba28f48cded7c))
+
 ## 0.1.0 (2026-07-22)
 
 
