@@ -102,7 +102,6 @@
 <section id="install">
     <div class="container">
         <h2>Install</h2>
-        <p class="section-lead">Available from conda-forge and PyPI. Pick your package manager.</p>
         <div class="install-tabs" data-install>
             <div class="install-tabs-bar" role="tablist" aria-label="Package manager">
                 <button class="install-tab is-active" data-target="conda" role="tab" aria-selected="true">conda</button>
@@ -130,7 +129,6 @@
 <section id="quickstart">
     <div class="container">
         <h2>Quick start</h2>
-        <p class="section-lead">One import, three entry points. They all take the same set data &mdash; switch tabs for the Dash component, a bare figure, or the data constructors.</p>
         <div class="install-tabs" data-install>
             <div class="install-tabs-bar" role="tablist" aria-label="Quick start example">
                 <button class="install-tab is-active" data-target="qs-component" role="tab" aria-selected="true">Dash component</button>
@@ -140,7 +138,6 @@
             </div>
 
             <div class="install-panel is-active" data-panel="qs-component">
-                <p class="section-lead">Drop <code>UpSet</code> into a layout; clicks surface as component properties you read the standard Dash way, <code>Input(id, property)</code>.</p>
                 <div class="snippet">
 <pre><code>import pandas as pd
 from dash import Dash, Input, Output, callback, html
@@ -176,7 +173,6 @@ if __name__ == "__main__":
             </div>
 
             <div class="install-panel" data-panel="qs-figure">
-                <p class="section-lead">Need a plain Plotly figure for a notebook or static export? <code>create_upset</code> returns a <code>go.Figure</code>.</p>
                 <div class="snippet">
 <pre><code>from dash_upset import create_upset
 
@@ -186,7 +182,6 @@ fig.show()  # or dcc.Graph(figure=fig); export to PNG/SVG/PDF via kaleido</code>
             </div>
 
             <div class="install-panel" data-panel="qs-data">
-                <p class="section-lead">Already have counts, per-set contents, or per-element memberships? Build the model with a <code>from_*</code> constructor, then hand it to the <code>UpSet</code> component (<code>data=</code>). For a plain <code>go.Figure</code> to <code>.show()</code> or export, pass the same model to <code>create_upset(data)</code> instead.</p>
                 <div class="install-tabs" data-install>
                     <div class="install-tabs-bar" role="tablist" aria-label="Data constructor">
                         <button class="install-tab is-active" data-target="d-counts" role="tab" aria-selected="true">from_counts</button>
