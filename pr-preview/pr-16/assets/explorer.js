@@ -31,6 +31,7 @@
         showPct: document.getElementById("ctrl-showpct"),
         showEmpty: document.getElementById("ctrl-showempty"),
         theme: document.getElementById("ctrl-theme"),
+        orientation: document.getElementById("ctrl-orientation"),
         color: document.getElementById("ctrl-color"),
         inactiveOn: document.getElementById("ctrl-inactive-on"),
         inactive: document.getElementById("ctrl-inactive"),
@@ -87,6 +88,7 @@
             showPercentages: el.showPct.checked,
             showEmpty: el.showEmpty.checked,
             theme: el.theme.value,
+            orientation: el.orientation.value,
             color: str(el.color),
             // Color pickers always carry a value; inactive applies only when
             // its override checkbox is ticked (else the theme default stands).
@@ -124,6 +126,7 @@
         if (opts.showEmpty) args.push("show_empty=True");
         if (!opts.showCounts) args.push("show_counts=False");
         if (opts.showPercentages) args.push("show_percentages=True");
+        if (opts.orientation && opts.orientation !== "horizontal") args.push('orientation="' + opts.orientation + '"');
         if (opts.theme !== "light") args.push('theme="' + opts.theme + '"');
         if (opts.color) args.push('color="' + opts.color + '"');
         if (opts.inactiveColor) args.push('inactive_color="' + opts.inactiveColor + '"');

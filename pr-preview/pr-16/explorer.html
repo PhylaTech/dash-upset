@@ -361,6 +361,13 @@
                     <h4 class="card-title">Appearance</h4>
                     <div class="deck-grid">
                         <div class="ctrl">
+                            <div class="ctrl-head"><label for="ctrl-orientation">orientation</label><button type="button" class="info" data-ref="orientation" data-help="&lt;code&gt;horizontal&lt;/code&gt; (default) or &lt;code&gt;vertical&lt;/code&gt;: sets become columns, intersections rows, set bars on top and intersection bars on the right.">i</button></div>
+                            <select id="ctrl-orientation">
+                                <option value="horizontal" selected>horizontal</option>
+                                <option value="vertical">vertical</option>
+                            </select>
+                        </div>
+                        <div class="ctrl">
                             <div class="ctrl-head"><label for="ctrl-theme">theme</label><button type="button" class="info" data-ref="theme" data-help="Light, dark, or auto, plus colorblind-safe palettes (Okabe-Ito, ColorBrewer, Paul Tol). A palette colors each set.">i</button></div>
                             <select id="ctrl-theme">
                                 <option value="light" selected>light</option>
@@ -436,9 +443,9 @@
 <script src="https://cdn.plot.ly/plotly-3.7.0.min.js" charset="utf-8"></script>
 <script src="./assets/nav.js?v=7"></script>
 <script src="./assets/install.js?v=2"></script>
-<script src="./assets/upset.js?v=5"></script>
+<script src="./assets/upset.js?v=6"></script>
 <script src="./data/examples.js?v=1"></script>
-<script src="./assets/explorer.js?v=8"></script>
+<script src="./assets/explorer.js?v=9"></script>
 <script>
     // Canvas tab switcher (Preview / Code / Install).
     (function () {
