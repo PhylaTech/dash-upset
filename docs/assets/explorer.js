@@ -31,6 +31,7 @@
         showPct: document.getElementById("ctrl-showpct"),
         showEmpty: document.getElementById("ctrl-showempty"),
         theme: document.getElementById("ctrl-theme"),
+        orientation: document.getElementById("ctrl-orientation"),
         color: document.getElementById("ctrl-color"),
         inactiveOn: document.getElementById("ctrl-inactive-on"),
         inactive: document.getElementById("ctrl-inactive"),
@@ -87,6 +88,7 @@
             showPercentages: el.showPct.checked,
             showEmpty: el.showEmpty.checked,
             theme: el.theme.value,
+            orientation: el.orientation.value,
             color: str(el.color),
             // Color pickers always carry a value; inactive applies only when
             // its override checkbox is ticked (else the theme default stands).
@@ -124,6 +126,7 @@
         if (opts.showEmpty) args.push("show_empty=True");
         if (!opts.showCounts) args.push("show_counts=False");
         if (opts.showPercentages) args.push("show_percentages=True");
+        if (opts.orientation && opts.orientation !== "horizontal") args.push('orientation="' + opts.orientation + '"');
         if (opts.theme !== "light") args.push('theme="' + opts.theme + '"');
         if (opts.color) args.push('color="' + opts.color + '"');
         if (opts.inactiveColor) args.push('inactive_color="' + opts.inactiveColor + '"');
@@ -165,7 +168,8 @@
     // highlight_selection is on, recolors the selected marks.
     function onClick(data) {
         var point = data && data.points && data.points[0];
-        var sel = window.DashUpset.selectionFromClick(point);
+        var vertical = el.orientation.value === "vertical";
+        var sel = window.DashUpset.selectionFromClick(point, vertical);
         if (!sel) return;
         if (sel.prop === "selected_intersection") {
             el.roIntersection.textContent = JSON.stringify(sel.value);
@@ -174,7 +178,7 @@
         }
         if (el.highlight.checked && sel.target) {
             var color = (el.selColor.value || "").trim() || "#9c5a3c";
-            window.DashUpset.applyHighlight(root, baseColors, sel.target, color);
+            window.DashUpset.applyHighlight(root, baseColors, sel.target, color, vertical);
         }
     }
 
@@ -196,9 +200,14 @@
             // Autosized figure: fit it to the (viewport-locked) canvas.
             window.Plotly.Plots.resize(root);
             // Accessibility: expose the figure's description as the graph's
-            // aria-label, exactly as the compiled component does.
+            // aria-label, and surface the auto-generated summary as the
+            // textarea placeholder so the user sees what "blank = auto" yields.
             var desc = fig.layout && fig.layout.meta && fig.layout.meta.description;
-            if (desc) { root.setAttribute("role", "img"); root.setAttribute("aria-label", desc); }
+            if (desc) {
+                root.setAttribute("role", "img");
+                root.setAttribute("aria-label", desc);
+                if (!el.description.value) el.description.placeholder = desc;
+            }
             // Snapshot the base colors so click-highlight paints over them.
             baseColors = window.DashUpset.baseColorsOf(fig);
             // Rebind after every (re)render: Plotly.purge on the no-subsets

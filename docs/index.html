@@ -136,6 +136,7 @@
                 <button class="install-tab is-active" data-target="qs-component" role="tab" aria-selected="true">Dash component</button>
                 <button class="install-tab" data-target="qs-figure" role="tab" aria-selected="false">Just the figure</button>
                 <button class="install-tab" data-target="qs-data" role="tab" aria-selected="false">Data input</button>
+                <button class="install-tab" data-target="qs-crossfilter" role="tab" aria-selected="false">Cross-filter</button>
             </div>
 
             <div class="install-panel is-active" data-panel="qs-component">
@@ -202,8 +203,9 @@ data = from_counts(
     {
         "ResNet": 140,
         "ViT": 120,
-        "ResNet&amp;ViT": 210,
-    }
+        "ResNet&amp;ViT": 210,  # "&amp;" joins set names; override with sep=
+    },
+    sep="&amp;",
 )
 
 app = Dash(__name__)
@@ -247,6 +249,43 @@ app = Dash(__name__)
 app.layout = UpSet(id="errors", data=data)</code></pre>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div class="install-panel" data-panel="qs-crossfilter">
+                <p class="section-lead">Wire the selection into the rest of your dashboard. A click lists the members of the clicked intersection &mdash; the drill-into-members pattern, straight from the model's stored element ids.</p>
+                <div class="snippet">
+<pre><code>from dash import Dash, Input, Output, callback, html
+from dash_upset import UpSet, from_contents
+
+# Element-level data keeps each intersection's member ids.
+contents = {
+    "ResNet": ["img1", "img2", "img5", "img7"],
+    "ViT": ["img2", "img5", "img8"],
+    "XGBoost": ["img2", "img3", "img5"],
+}
+data = from_contents(contents)
+members = {frozenset(i.sets): i.elements for i in data.intersections}
+
+app = Dash(__name__)
+app.layout = html.Div(
+    [
+        UpSet(id="errors", data=data),
+        html.Pre(id="members"),
+    ]
+)
+
+
+@callback(Output("members", "children"), Input("errors", "selected_intersection"))
+def show_members(selection):
+    if not selection:
+        return "Click an intersection to list its members."
+    ids = members.get(frozenset(selection["sets"]), ())
+    return f"{selection['label']}: {', '.join(map(str, ids))}"
+
+
+if __name__ == "__main__":
+    app.run(debug=True)</code></pre>
                 </div>
             </div>
         </div>
