@@ -74,9 +74,16 @@ const DashUpset = (props) => {
     const description =
         (figure && figure.layout && figure.layout.meta && figure.layout.meta.description) || null;
 
+    // Orientation drives which matrix axis carries the intersection vs set
+    // index (they swap in vertical), so the highlight paints the right marks.
+    const vertical =
+        (figure && figure.layout && figure.layout.meta && figure.layout.meta.orientation) === 'vertical';
+
     // Repaint the selected marks over the figure's base colors. Base colors are
     // read from the (immutable) figure prop, never from the graph div, so a
-    // prior highlight never leaks into the next one.
+    // prior highlight never leaks into the next one. `target` is
+    // {type: 'intersection'|'sets', index}; index is the intersection or set
+    // ordinal (axis-independent), matched to the correct dot axis by orientation.
     const applyHighlight = React.useCallback(
         (target) => {
             const gd = gdRef.current;
@@ -87,20 +94,20 @@ const DashUpset = (props) => {
 
             const barIdx = traceIndex(gd.data, 'upset:intersection-bars');
             if (barIdx >= 0) {
-                const n = (gd.data[barIdx].y || []).length;
+                const n = (gd.data[barIdx].x || []).length;
                 const colors = colorArray(base[barIdx] && base[barIdx].marker && base[barIdx].marker.color, n);
-                if (target && target.type === 'intersection' && target.column != null) {
-                    colors[target.column] = selection_color;
+                if (target && target.type === 'intersection' && target.index != null) {
+                    colors[target.index] = selection_color;
                 }
                 Plotly.restyle(gd, {'marker.color': [colors]}, [barIdx]);
             }
 
             const setIdx = traceIndex(gd.data, 'upset:set-bars');
             if (setIdx >= 0) {
-                const n = (gd.data[setIdx].y || []).length;
+                const n = (gd.data[setIdx].x || []).length;
                 const colors = colorArray(base[setIdx] && base[setIdx].marker && base[setIdx].marker.color, n);
-                if (target && target.type === 'sets' && target.row != null) {
-                    colors[target.row] = selection_color;
+                if (target && target.type === 'sets' && target.index != null) {
+                    colors[target.index] = selection_color;
                 }
                 Plotly.restyle(gd, {'marker.color': [colors]}, [setIdx]);
             }
@@ -109,18 +116,24 @@ const DashUpset = (props) => {
             if (dotIdx >= 0) {
                 const xs = gd.data[dotIdx].x || [];
                 const ys = gd.data[dotIdx].y || [];
+                // Intersection index is the dot's y in vertical (else x); set
+                // index is the reverse.
+                const intAxis = vertical ? ys : xs;
+                const setAxis = vertical ? xs : ys;
                 const colors = colorArray(base[dotIdx] && base[dotIdx].marker && base[dotIdx].marker.color, xs.length);
                 for (let i = 0; i < xs.length; i += 1) {
-                    const hitColumn = target && target.type === 'intersection' && xs[i] === target.column;
-                    const hitRow = target && target.type === 'sets' && ys[i] === target.row;
-                    if (hitColumn || hitRow) {
+                    const hit =
+                        target &&
+                        ((target.type === 'intersection' && intAxis[i] === target.index) ||
+                            (target.type === 'sets' && setAxis[i] === target.index));
+                    if (hit) {
                         colors[i] = selection_color;
                     }
                 }
                 Plotly.restyle(gd, {'marker.color': [colors]}, [dotIdx]);
             }
         },
-        [figure, selection_color]
+        [figure, selection_color, vertical]
     );
 
     const handleClick = (event) => {
@@ -135,24 +148,25 @@ const DashUpset = (props) => {
 
         if (meta === 'upset:intersection-bars') {
             const label = customdata.length ? customdata[0] : null;
+            const size = vertical ? point.x : point.y; // value axis swaps by orientation
             if (setProps) {
                 setProps({
-                    selected_intersection: {label, sets: setsFromLabel(label), size: point.y},
+                    selected_intersection: {label, sets: setsFromLabel(label), size},
                 });
             }
-            target = {type: 'intersection', column: point.pointNumber};
+            target = {type: 'intersection', index: point.pointNumber};
         } else if (meta === 'upset:matrix-dots') {
             const label = customdata.length > 1 ? labelFromDot(customdata[1]) : null;
             if (setProps) {
                 setProps({selected_intersection: {label, sets: setsFromLabel(label)}});
             }
-            target = {type: 'intersection', column: point.x};
+            target = {type: 'intersection', index: vertical ? point.y : point.x};
         } else if (meta === 'upset:set-bars') {
             const name = customdata.length ? customdata[0] : null;
             if (name && setProps) {
                 setProps({selected_sets: [name]});
             }
-            target = name ? {type: 'sets', row: point.pointNumber} : null;
+            target = name ? {type: 'sets', index: point.pointNumber} : null;
         }
 
         if (highlight_selection && target) {

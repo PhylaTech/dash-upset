@@ -657,7 +657,7 @@ def create_upset(
         plot_bgcolor=th["paper"],
         colorway=th["colorway"],
         hoverlabel={"font": {"size": 12}},
-        meta={"description": description},
+        meta={"description": description, "orientation": orientation},
     )
     if template is not None:
         fig.update_layout(template=template)
