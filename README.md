@@ -2,11 +2,7 @@
 
 Interactive [UpSet plots](https://upset.app) for [Plotly Dash](https://dash.plotly.com).
 
-> **Status: early development (pre-1.0).** The data model, the figure factory
-> (`create_upset`), and the interactive `UpSet` Dash component with
-> click-selection callback properties are implemented and tested; see the
-> [roadmap](./ROADMAP.md) for what's next. Not yet published to PyPI or
-> conda-forge. Documentation: https://phylatech.github.io/dash-upset/
+**[Documentation and live explorer](https://phylatech.github.io/dash-upset/)**
 
 ## What is an UpSet plot?
 
@@ -20,31 +16,23 @@ overlapping circles with:
 - **intersection-size bars** giving the size of each intersection.
 
 This scales to dozens of sets and makes the large intersections obvious at a
-glance. `dash-upset` aims to bring this to Dash as a reusable, themeable,
+glance. `dash-upset` brings it to Dash as a reusable, themeable,
 callback-friendly component.
 
-## Why this exists
+## Why dash-upset
 
-There is no first-class UpSet component for Dash, and wrapping the existing
-JavaScript implementations has real costs: [UpSet.js](https://upset.js.org) is
-**AGPLv3** (unsuitable for a permissively licensed library), and while
-[UpSet 2.0](https://github.com/visdesignlab/upset2) is BSD-3-Clause, embedding
-its React stack would drag a heavy dependency tree into every app and give up
-notebook rendering and static export.
-
-`dash-upset` therefore keeps all UpSet logic (data model, modes, sorting,
-filtering, deviation, theming) in pure Python, composing the figure from
-Plotly primitives: MIT-clean and notebook-friendly. The `UpSet` component adds
-a thin compiled React layer (react-plotly.js) on top of that same figure so
-clicks surface as ordinary Dash component properties; the build artifacts are
-committed, so installing and using the package needs no Node toolchain.
-`upset2-react` remains the documented fallback engine if Plotly's interaction
-ceiling is ever reached. See the [roadmap](./ROADMAP.md) for the full analysis
-and the decision record.
+- **Pure Python, MIT-licensed.** All UpSet logic (counting modes, sorting,
+  filtering, deviation, theming) composes a Plotly figure in Python. No heavy
+  JavaScript stack, and it renders in notebooks.
+- **Drop-in Dash component.** `UpSet` renders that figure and turns clicks into
+  ordinary component properties, so callbacks use the standard
+  `Input(id, property)`. The compiled React layer ships prebuilt, so installing
+  needs no Node toolchain.
+- **One input, two ways to render.** The same data drives a live `UpSet`
+  component or a static `create_upset` figure for notebooks and publication
+  export (PNG / SVG / PDF).
 
 ## Installation
-
-`dash-upset` is not published yet. Once released:
 
 ```bash
 # conda-forge (preferred)
@@ -138,28 +126,10 @@ Sorting and display are controlled per plot, e.g.
 `create_upset` accepts the same keywords. The full argument reference lives at
 https://phylatech.github.io/dash-upset/reference.html.
 
-## Development
+## Contributing
 
-This project uses [pixi](https://pixi.sh) for environment and task management.
-
-```bash
-pixi install          # create the environment (deps from conda-forge)
-pixi run test         # run the test suite
-pixi run lint         # ruff lint
-pixi run format       # ruff format
-```
-
-The compiled React layer behind the `UpSet` component
-(`dash_upset_component/`) is committed, so none of the above needs Node. To
-change it, edit `src/lib/components/DashUpset.react.js` and rebuild:
-
-```bash
-npm install
-pixi run build-component   # webpack bundle + dash-generate-components classes
-```
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for the commit conventions that drive
-releases.
+Development setup, the docs workflow, and the commit conventions that drive
+releases are in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Prior art and credits
 
@@ -167,8 +137,7 @@ releases.
   et al. define the technique.
 - [UpSet 2.0](https://github.com/visdesignlab/upset2) by the Visualization
   Design Lab (BSD-3-Clause) is the technique authors' interactive
-  reimplementation and the documented candidate engine should this library
-  ever add a JavaScript renderer (see the roadmap).
+  reimplementation.
 - [UpSet.js](https://upset.js.org) by Samuel Gratzl is an interactive JS
   implementation (AGPLv3 / commercial).
 - [`upsetplot`](https://upsetplot.readthedocs.io) by Joel Nothman (BSD-3-Clause)
