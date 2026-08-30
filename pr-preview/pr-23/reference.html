@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reference &mdash; dash-upset</title>
+    <meta name="description" content="Complete reference for dash-upset: every create_upset property with its type, default, and a plain-English description, the from_* data constructors, intersection modes, sorting, themes, and the canonical data model.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+    <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="./assets/favicon-32x32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="./assets/favicon-16x16.png" sizes="16x16" type="image/png">
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+    <link rel="manifest" href="./assets/site.webmanifest">
+    <link rel="stylesheet" href="./assets/site.css?v=5">
+    <style>
+        /* Reference-page layout: sticky sidebar + prose prop cards. */
+        .reference-container { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; align-items: start; }
+        .reference-sidebar { position: sticky; top: 72px; max-height: calc(100vh - 96px); overflow-y: auto; padding-right: 8px; font-size: 0.88rem; }
+        .reference-sidebar h4 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted); margin: 16px 0 6px; font-weight: 700; }
+        .reference-sidebar h4:first-child { margin-top: 0; }
+        .reference-sidebar ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+        .reference-sidebar a { display: block; padding: 4px 10px; border-radius: 4px; color: var(--color-text-muted); text-decoration: none; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; }
+        .reference-sidebar a:hover { background: var(--color-bg); color: var(--color-text); }
+        .reference-main { min-width: 0; }
+        .ref-intro { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 32px; }
+        .ref-intro p { color: var(--color-text-muted); font-size: 0.95rem; }
+        .ref-intro p + p { margin-top: 8px; }
+        .ref-intro code { background: var(--parchment-mid); padding: 2px 6px; border-radius: 4px; font-size: 0.88em; }
+        .ref-group { margin-bottom: 40px; scroll-margin-top: 72px; }
+        .ref-group > h2 { font-size: 1.4rem; margin-bottom: 6px; padding-top: 20px; border-top: 2px solid var(--color-border); }
+        .ref-group > p.group-desc { color: var(--color-text-muted); font-size: 0.95rem; margin-bottom: 20px; }
+        .prop { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px; scroll-margin-top: 72px; }
+        .prop:target { border-color: var(--color-primary); box-shadow: 0 0 0 3px oklch(42% 0.10 55 / 0.28); }
+        .prop-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+        .prop-head h3 { font-family: "SFMono-Regular", Consolas, monospace; font-size: 1.05rem; color: var(--color-text); text-transform: none; letter-spacing: 0; margin: 0; font-weight: 700; }
+        .prop-head h3 a.anchor { color: var(--color-text-muted); text-decoration: none; margin-left: 6px; opacity: 0; transition: opacity 0.15s; font-weight: 400; }
+        .prop:hover .prop-head h3 a.anchor { opacity: 1; }
+        .pill { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.75rem; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text-muted); white-space: nowrap; }
+        .pill.type { background: var(--parchment-mid); }
+        .pill.default { background: var(--parchment-mid); color: var(--color-primary); border-color: var(--ink-hairline-strong); }
+        .prop-body p { font-size: 0.93rem; color: var(--color-text); margin-bottom: 10px; }
+        .prop-body p:last-child { margin-bottom: 0; }
+        .prop-body p code, .group-desc code { background: var(--parchment-mid); color: var(--color-text); padding: 2px 6px; border-radius: 4px; font-size: 0.88em; }
+        .prop-body .snippet { margin-top: 12px; }
+        .prop-body .snippet pre { font-size: 0.82rem; }
+        @media (max-width: 880px) {
+            .reference-container { grid-template-columns: 1fr; gap: 20px; }
+            .reference-sidebar { position: static; max-height: none; border: 1px solid var(--color-border); border-radius: var(--radius); padding: 14px 16px; background: var(--color-surface); }
+            .reference-sidebar ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+        }
+    </style>
+</head>
+<body data-page="reference">
+
+<div id="site-nav-mount"></div>
+
+<header class="hero">
+    <h1>Reference</h1>
+    <p>The <code>UpSet</code> component and the <code>create_upset</code> figure factory &mdash; every property with its type, default, and what it does, plus the data constructors, intersection modes, themes, and the data model.</p>
+    <div class="hero-actions">
+        <a class="btn btn-primary" href="./explorer.html">Try it live</a>
+        <a class="btn btn-outline" href="https://github.com/PhylaTech/dash-upset" target="_blank" rel="noopener">GitHub</a>
+    </div>
+</header>
+
+<section>
+    <div class="container reference-container">
+        <aside class="reference-sidebar">
+            <h4>UpSet</h4>
+            <ul>
+                <li><a href="#UpSet">UpSet</a></li>
+                <li><a href="#selected_intersection">selected_intersection</a></li>
+                <li><a href="#selected_sets">selected_sets</a></li>
+                <li><a href="#highlight_selection">highlight_selection</a></li>
+                <li><a href="#selection_color">selection_color</a></li>
+            </ul>
+            <h4>create_upset</h4>
+            <ul>
+                <li><a href="#data">data</a></li>
+                <li><a href="#sets">sets</a></li>
+                <li><a href="#mode">mode</a></li>
+                <li><a href="#sort_by">sort_by</a></li>
+                <li><a href="#sort_sets_by">sort_sets_by</a></li>
+                <li><a href="#min_subset_size">min_subset_size</a></li>
+                <li><a href="#max_subset_size">max_subset_size</a></li>
+                <li><a href="#min_degree">min_degree</a></li>
+                <li><a href="#max_degree">max_degree</a></li>
+                <li><a href="#max_subsets">max_subsets</a></li>
+                <li><a href="#show_empty">show_empty</a></li>
+                <li><a href="#show_counts">show_counts</a></li>
+                <li><a href="#show_percentages">show_percentages</a></li>
+                <li><a href="#theme">theme</a></li>
+                <li><a href="#color">color</a></li>
+                <li><a href="#inactive_color">inactive_color</a></li>
+                <li><a href="#title">title</a></li>
+                <li><a href="#description">description</a></li>
+                <li><a href="#intersection_title">intersection_title</a></li>
+                <li><a href="#set_size_title">set_size_title</a></li>
+                <li><a href="#show_intersection_ticks">show_intersection_ticks</a></li>
+                <li><a href="#show_set_size_ticks">show_set_size_ticks</a></li>
+                <li><a href="#orientation">orientation</a></li>
+                <li><a href="#size">width / height</a></li>
+                <li><a href="#template">template</a></li>
+            </ul>
+            <h4>Constructors</h4>
+            <ul>
+                <li><a href="#from_counts">from_counts</a></li>
+                <li><a href="#from_memberships">from_memberships</a></li>
+                <li><a href="#from_contents">from_contents</a></li>
+                <li><a href="#from_indicators">from_indicators</a></li>
+            </ul>
+            <h4>Data model</h4>
+            <ul>
+                <li><a href="#UpSetData">UpSetData</a></li>
+                <li><a href="#UpSetIntersection">UpSetIntersection</a></li>
+            </ul>
+        </aside>
+
+        <main class="reference-main">
+            <div class="ref-intro">
+                <p><strong>Import:</strong> <code>from dash_upset import UpSet, create_upset</code></p>
+                <p><code>UpSet</code> is the Dash component you put in a layout; <code>create_upset</code> is the figure factory beneath it, returning a <code>plotly.graph_objects.Figure</code> for notebooks, static export, or your own <code>dcc.Graph</code>. Both take the same data + keyword arguments; every argument except <code>data</code> is keyword-only and optional. Want to see each one change the plot live? Open the <a href="./explorer.html">Component Explorer</a>.</p>
+            </div>
+
+            <!-- UpSet component -->
+            <section class="ref-group" id="upset-component">
+                <h2>UpSet</h2>
+                <p class="group-desc">The Dash component. Put it in your layout; it builds the same figure as <code>create_upset</code> and turns clicks into two component properties your callbacks read the standard Dash way: <code>Input(id, property)</code>.</p>
+
+                <article class="prop" id="UpSet">
+                    <div class="prop-head"><h3>UpSet<a class="anchor" href="#UpSet">#</a></h3><span class="pill type">component</span></div>
+                    <div class="prop-body">
+                        <p>Accepts <code>data</code> and <code>sets</code> plus every <code>create_upset</code> keyword below, and the usual component props: <code>id</code>, <code>style</code>, <code>className</code>, and an optional plotly.js <code>config</code>.</p>
+                        <div class="snippet"><pre><code>from dash import Dash
+from dash_upset import UpSet
+
+app = Dash(__name__)
+app.layout = UpSet(id="genes", data=df, sets=["A", "B", "C"])</code></pre></div>
+                    </div>
+                </article>
+
+                <article class="prop" id="selected_intersection">
+                    <div class="prop-head"><h3>selected_intersection<a class="anchor" href="#selected_intersection">#</a></h3><span class="pill type">dict | None</span><span class="pill default">None</span></div>
+                    <div class="prop-body">
+                        <p>Set when an intersection-size bar or a matrix dot is clicked: <code>{"label", "sets", "size"}</code> (<code>size</code> only for bar clicks). <code>None</code> until the first click.</p>
+                        <div class="snippet"><pre><code>@callback(
+    Output("out", "children"),
+    Input("genes", "selected_intersection"),
+)
+def show(selection):
+    return str(selection)</code></pre></div>
+                    </div>
+                </article>
+
+                <article class="prop" id="selected_sets">
+                    <div class="prop-head"><h3>selected_sets<a class="anchor" href="#selected_sets">#</a></h3><span class="pill type">list[str]</span><span class="pill default">[]</span></div>
+                    <div class="prop-body">
+                        <p>Set when a set-size bar is clicked: a list of set names. Read it with <code>Input("genes", "selected_sets")</code>.</p>
+                    </div>
+                </article>
+
+                <article class="prop" id="highlight_selection">
+                    <div class="prop-head"><h3>highlight_selection<a class="anchor" href="#highlight_selection">#</a></h3><span class="pill type">bool</span><span class="pill default">True</span></div>
+                    <div class="prop-body">
+                        <p>When on, clicking recolors the selected marks to <code>selection_color</code> as a visible cue: the clicked intersection's bar and its member dots, or the clicked set's bar and its dots. Set <code>False</code> to leave the plot unchanged on click (the selection is still reported to callbacks).</p>
+                    </div>
+                </article>
+
+                <article class="prop" id="selection_color">
+                    <div class="prop-head"><h3>selection_color<a class="anchor" href="#selection_color">#</a></h3><span class="pill type">str</span><span class="pill default">"#9c5a3c"</span></div>
+                    <div class="prop-body">
+                        <p>The color painted on the selected marks when <code>highlight_selection</code> is on. Any CSS color.</p>
+                    </div>
+                </article>
+            </section>
+
+            <!-- create_upset -->
+            <section class="ref-group" id="create-upset">
+                <h2>create_upset</h2>
+                <p class="group-desc">The figure factory. Composes the intersection-size bars, set-size bars, and the membership dot matrix into one shared-axes figure.</p>
+
+                <article class="prop" id="data">
+                    <div class="prop-head"><h3>data<a class="anchor" href="#data">#</a></h3><span class="pill type">DataFrame | UpSetData</span><span class="pill default">required</span></div>
+                    <div class="prop-body"><p>A dataframe of boolean indicator columns (pandas, Polars, PyArrow, ... via narwhals) &mdash; one column per set &mdash; or an <a href="#UpSetData"><code>UpSetData</code></a> from a <a href="#from_counts"><code>from_*</code></a> constructor. The only positional argument.</p></div>
+                </article>
+
+                <article class="prop" id="sets">
+                    <div class="prop-head"><h3>sets<a class="anchor" href="#sets">#</a></h3><span class="pill type">list[str] | None</span><span class="pill default">None</span></div>
+                    <div class="prop-body"><p>When <code>data</code> is a dataframe, the columns to treat as sets, in order; other columns (ids, attributes) are ignored. Unused when <code>data</code> is already an <code>UpSetData</code>.</p></div>
+                </article>
+
+                <article class="prop" id="mode">
+                    <div class="prop-head"><h3>mode<a class="anchor" href="#mode">#</a></h3><span class="pill type">str</span><span class="pill default">"distinct"</span></div>
+                    <div class="prop-body">
+                        <p>How each subset is counted. The dot matrix is identical in every mode &mdash; the dots fix <em>which</em> sets a column represents (its degree). <code>mode</code> only changes <em>how the bar height for that column is counted</em>.</p>
+                        <p><code>"distinct"</code> counts elements in <em>exactly</em> those sets and no others (the classic exclusive intersection &mdash; columns are mutually exclusive, so bars sum to the total). <code>"intersect"</code> counts elements in <em>at least</em> those sets, i.e. the full <code>|A &cap; B|</code> including elements also in other sets. <code>"union"</code> counts elements in <em>at least one</em>, i.e. <code>|A &cup; B|</code>. The two inclusive modes overlap, so their bars do not sum to the total.</p>
+                        <p><strong>Worked example.</strong> Say 84 elements are in A and B only, and 40 more are in A, B, and C. The <code>A &amp; B</code> column (degree 2) shows <strong>84</strong> in <code>distinct</code> mode, but <strong>124</strong> (84 + 40) in <code>intersect</code> mode &mdash; same column, different count.</p>
+                    </div>
+                </article>
+
+                <article class="prop" id="sort_by">
+                    <div class="prop-head"><h3>sort_by<a class="anchor" href="#sort_by">#</a></h3><span class="pill type">str</span><span class="pill default">"cardinality"</span></div>
+                    <div class="prop-body"><p>Order of the intersection columns: <code>"cardinality"</code> (largest first), <code>"degree"</code> (fewest sets first), <code>"deviation"</code> (most surprising vs. independence first), or <code>"input"</code>. Prefix any key with <code>-</code> to reverse, e.g. <code>"-degree"</code>.</p></div>
+                </article>
+
+                <article class="prop" id="sort_sets_by">
+                    <div class="prop-head"><h3>sort_sets_by<a class="anchor" href="#sort_sets_by">#</a></h3><span class="pill type">str</span><span class="pill default">"cardinality"</span></div>
+                    <div class="prop-body"><p>Order of the set rows: <code>"cardinality"</code>, <code>"name"</code> (alphabetical), or <code>"input"</code>. Prefix with <code>-</code> to reverse.</p></div>
+                </article>
+
+                <article class="prop" id="min_subset_size">
+                    <div class="prop-head"><h3>min_subset_size<a class="anchor" href="#min_subset_size">#</a></h3><span class="pill type">float | None</span><span class="pill default">None</span></div>
+                    <div class="prop-body"><p>Hide any subset smaller than this. Applies to the mode-dependent size, inclusive.</p></div>
+                </article>
+
+                <article class="prop" id="max_subset_size">
+                    <div class="prop-head"><h3>max_subset_size<a class="anchor" href="#max_subset_size">#</a></h3><span class="pill type">float | None</span><span class="pill default">None</span></div>
+                    <div class="prop-body"><p>Hide any subset larger than this (inclusive). Useful for suppressing a dominant intersection that flattens the rest.</p></div>
+                </article>
+
+                <article class="prop" id="min_degree">
+                    <div class="prop-head"><h3>min_degree<a class="anchor" href="#min_degree">#</a></h3><span class="pill type">int | None</span><span class="pill default">None</span></div>
+                    <div class="prop-body"><p>Hide subsets that involve fewer than this many sets. Set to <code>2</code> to show only genuine overlaps.</p></div>
+                </article>
+
+                <article class="prop" id="max_degree">
+                    <div class="prop-head"><h3>max_degree<a class="anchor" href="#max_degree">#</a></h3><span class="pill type">int | None</span><span class="pill default">None</span></div>
+                    <div class="prop-body"><p>Hide subsets that involve more than this many sets.</p></div>
+                </article>
+
+                <article class="prop" id="max_subsets">
+                    <div class="prop-head"><h3>max_subsets<a class="anchor" href="#max_subsets">#</a></h3><span class="pill type">int | None</span><span class="pill default">None</span></div>
+                    <div class="prop-body"><p>Keep only the N largest subsets by size. Ties at the cutoff are all kept, so you may get a few more than N (matching <code>upsetplot</code>).</p></div>
+                </article>
+
+                <article class="prop" id="show_empty">
+                    <div class="prop-head"><h3>show_empty<a class="anchor" href="#show_empty">#</a></h3><span class="pill type">bool</span><span class="pill default">False</span></div>
+                    <div class="prop-body"><p>Include the degree-0 subset (elements in no set at all). Off by default.</p></div>
+                </article>
+
+                <article class="prop" id="show_counts">
+                    <div class="prop-head"><h3>show_counts<a class="anchor" href="#show_counts">#</a></h3><span class="pill type">bool</span><span class="pill default">True</span></div>
+                    <div class="prop-body"><p>Print the size above each intersection bar.</p></div>
+                </article>
+
+                <article class="prop" id="show_percentages">
+                    <div class="prop-head"><h3>show_percentages<a class="anchor" href="#show_percentages">#</a></h3><span class="pill type">bool</span><span class="pill default">False</span></div>
+                    <div class="prop-body"><p>Print each bar's share of the total. Combined with <code>show_counts</code> the label reads <code>"N (X%)"</code>; on its own it reads <code>"X%"</code>.</p></div>
+                </article>
+
+                <article class="prop" id="theme">
+                    <div class="prop-head"><h3>theme<a class="anchor" href="#theme">#</a></h3><span class="pill type">str</span><span class="pill default">"light"</span></div>
+                    <div class="prop-body">
+                        <p>Visual theme. <code>"light"</code> and <code>"dark"</code> recolor the marks and chrome (bars, dots, connectors, grid, baseline, text, and paper background) for the surface. <code>"auto"</code> resolves to light for a static figure; inside the Dash component it follows the page's color scheme live.</p>
+                        <p>The colorblind-safe variants also set a CVD-safe colorway: <code>"okabe-ito-light"</code> / <code>"okabe-ito-dark"</code>, <code>"colorbrewer-light"</code> / <code>"colorbrewer-dark"</code> (Set2 / Dark2), and <code>"tol-light"</code> / <code>"tol-dark"</code> (Paul Tol Bright). An explicit <code>color</code> always wins over the theme.</p>
+                        <div class="snippet"><pre><code>fig = create_upset(data, theme="okabe-ito-dark")</code></pre></div>
+                    </div>
+                </article>
+
+                <article class="prop" id="color">
+                    <div class="prop-head"><h3>color<a class="anchor" href="#color">#</a></h3><span class="pill type">str | None</span><span class="pill default">None</span></div>
+                    <div class="prop-body"><p>Color of the data marks (bars, active dots, connectors). Defaults to the theme's ink; any value you pass overrides the theme.</p></div>
+                </article>
+
+                <article class="prop" id="inactive_color">
+                    <div class="prop-head"><h3>inactive_color<a class="anchor" href="#inactive_color">#</a></h3><span class="pill type">str | None</span><span class="pill default">None</span></div>
+                    <div class="prop-body"><p>Color of the non-member (empty) matrix dots. Defaults to the theme's inactive tone.</p></div>
+                </article>
+
+                <article class="prop" id="title">
+                    <div class="prop-head"><h3>title<a class="anchor" href="#title">#</a></h3><span class="pill type">str | None</span><span class="pill default">None</span></div>
+                    <div class="prop-body"><p>Optional figure title, drawn top-left.</p></div>
+                </article>
+
+                <article class="prop" id="description">
+                    <div class="prop-head"><h3>description<a class="anchor" href="#description">#</a></h3><span class="pill type">str | None</span><span class="pill default">auto</span></div>
+                    <div class="prop-body"><p>A text description of the plot for screen readers. It is stored on the figure (<code>layout.meta["description"]</code>) and the <code>UpSet</code> component applies it as the graph's <code>aria-label</code> (with <code>role="img"</code>). Leave it unset to auto-generate a concise summary &mdash; set count, set names, intersection count, and the largest shown intersection.</p></div>
+                </article>
+
+                <article class="prop" id="intersection_title">
+                    <div class="prop-head"><h3>intersection_title<a class="anchor" href="#intersection_title">#</a></h3><span class="pill type">str | None</span><span class="pill default">auto</span></div>
+                    <div class="prop-body"><p>Title of the intersection-size axis. Omit for the automatic label (<code>"Intersection size"</code>, or the mode-specific variant); pass a string to override it, or <code>None</code> to hide it.</p></div>
+                </article>
+
+                <article class="prop" id="set_size_title">
+                    <div class="prop-head"><h3>set_size_title<a class="anchor" href="#set_size_title">#</a></h3><span class="pill type">str | None</span><span class="pill default">auto</span></div>
+                    <div class="prop-body"><p>Title of the set-size axis. Omit for <code>"Set size"</code>; pass a string to override, or <code>None</code> to hide it.</p></div>
+                </article>
+
+                <article class="prop" id="show_intersection_ticks">
+                    <div class="prop-head"><h3>show_intersection_ticks<a class="anchor" href="#show_intersection_ticks">#</a></h3><span class="pill type">bool</span><span class="pill default">True</span></div>
+                    <div class="prop-body"><p>Show the numeric tick labels on the intersection-size axis.</p></div>
+                </article>
+
+                <article class="prop" id="show_set_size_ticks">
+                    <div class="prop-head"><h3>show_set_size_ticks<a class="anchor" href="#show_set_size_ticks">#</a></h3><span class="pill type">bool</span><span class="pill default">True</span></div>
+                    <div class="prop-body"><p>Show the numeric tick labels on the set-size axis.</p></div>
+                </article>
+
+                <article class="prop" id="orientation">
+                    <div class="prop-head"><h3>orientation<a class="anchor" href="#orientation">#</a></h3><span class="pill type">str</span><span class="pill default">"horizontal"</span></div>
+                    <div class="prop-body"><p><code>"horizontal"</code> (default) lays intersections along the x-axis as columns, with set-size bars on the left. <code>"vertical"</code> transposes the plot: sets become columns, intersections become rows, set-size bars sit on top, and intersection-size bars extend to the right &mdash; handy for many intersections in a narrow width.</p></div>
+                </article>
+
+                <article class="prop" id="size">
+                    <div class="prop-head"><h3>width / height<a class="anchor" href="#size">#</a></h3><span class="pill type">int | None</span><span class="pill default">None</span></div>
+                    <div class="prop-body"><p>Figure size in pixels. <code>width=None</code> is responsive; <code>height=None</code> is computed from the number of sets so rows stay legible.</p></div>
+                </article>
+
+                <article class="prop" id="template">
+                    <div class="prop-head"><h3>template<a class="anchor" href="#template">#</a></h3><span class="pill type">str | None</span><span class="pill default">"plotly_white"</span></div>
+                    <div class="prop-body"><p>Plotly template underneath the theme's explicit colors. <code>None</code> inherits the global default.</p></div>
+                </article>
+            </section>
+
+            <!-- Constructors -->
+            <section class="ref-group" id="constructors">
+                <h2>Data constructors</h2>
+                <p class="group-desc">Four ways to build an <code>UpSetData</code>, mirroring the <a href="https://upsetplot.readthedocs.io" target="_blank" rel="noopener">upsetplot</a> conventions. Pick whichever matches the shape your data is already in.</p>
+
+                <article class="prop" id="from_counts">
+                    <div class="prop-head"><h3>from_counts<a class="anchor" href="#from_counts">#</a></h3><span class="pill type">counts, sep="&amp;"</span></div>
+                    <div class="prop-body">
+                        <p>Pre-aggregated exclusive intersection sizes. Keys are set-name tuples or <code>sep</code>-joined strings; the empty key is the "in no set" group. Values are the distinct sizes; set totals are derived for you.</p>
+                        <div class="snippet"><pre><code>from_counts({"A": 10, "B": 4, "A&amp;B": 6})</code></pre></div>
+                    </div>
+                </article>
+
+                <article class="prop" id="from_memberships">
+                    <div class="prop-head"><h3>from_memberships<a class="anchor" href="#from_memberships">#</a></h3><span class="pill type">memberships, element_ids=None</span></div>
+                    <div class="prop-body">
+                        <p>One collection of set names per element (an empty collection means the element is in no set). Pass <code>element_ids</code> to name the elements.</p>
+                        <div class="snippet"><pre><code>from_memberships([("A",), ("A", "B"), ()])</code></pre></div>
+                    </div>
+                </article>
+
+                <article class="prop" id="from_contents">
+                    <div class="prop-head"><h3>from_contents<a class="anchor" href="#from_contents">#</a></h3><span class="pill type">contents</span></div>
+                    <div class="prop-body">
+                        <p>A mapping of <code>{set_name: iterable_of_element_ids}</code>. An element listed twice in one set is counted once.</p>
+                        <div class="snippet"><pre><code>from_contents({"A": ["x", "y"], "B": ["y", "z"]})</code></pre></div>
+                    </div>
+                </article>
+
+                <article class="prop" id="from_indicators">
+                    <div class="prop-head"><h3>from_indicators<a class="anchor" href="#from_indicators">#</a></h3><span class="pill type">indicators, element_ids=None</span></div>
+                    <div class="prop-body">
+                        <p>A boolean indicator table (rows = elements, columns = sets) from any <a href="https://github.com/narwhals-dev/narwhals" target="_blank" rel="noopener">narwhals</a>-supported dataframe &mdash; pandas, Polars, PyArrow, cuDF, Modin &mdash; or a plain mapping of boolean columns. A pandas-style index supplies element ids when present.</p>
+                        <div class="snippet"><pre><code>from_indicators(df)  # df: boolean columns, one per set</code></pre></div>
+                    </div>
+                </article>
+            </section>
+
+            <!-- Data model -->
+            <section class="ref-group" id="model">
+                <h2>Data model</h2>
+                <p class="group-desc">Every constructor normalizes to one canonical model the renderer consumes. You rarely build these by hand.</p>
+
+                <article class="prop" id="UpSetData">
+                    <div class="prop-head"><h3>UpSetData<a class="anchor" href="#UpSetData">#</a></h3><span class="pill type">set_names, set_sizes, intersections</span></div>
+                    <div class="prop-body"><p>Ordered set names with their total sizes, plus the exclusive intersections. Exposes the <code>total_size</code> property and a <code>set_size(name)</code> method.</p></div>
+                </article>
+
+                <article class="prop" id="UpSetIntersection">
+                    <div class="prop-head"><h3>UpSetIntersection<a class="anchor" href="#UpSetIntersection">#</a></h3><span class="pill type">sets, size, elements=None</span></div>
+                    <div class="prop-body"><p>One exclusive intersection: the elements in exactly <code>sets</code>. <code>elements</code> is kept for the element-based constructors and is <code>None</code> for <code>from_counts</code>. Exposes the <code>degree</code> property (number of participating sets).</p></div>
+                </article>
+            </section>
+        </main>
+    </div>
+</section>
+
+<footer>
+    <p>
+        Made with &#x2764;&#xFE0F; by <a href="https://github.com/PhylaTech" target="_blank" rel="noopener">PhylaTech</a>
+        &middot; Powered by <a href="https://plotly.com/python/" target="_blank" rel="noopener">Plotly</a>
+        &middot; <a href="https://github.com/PhylaTech/dash-upset" target="_blank" rel="noopener">Source on GitHub</a>
+    </p>
+</footer>
+
+<script src="./assets/nav.js?v=7"></script>
+<script>
+    if (window.DashUpsetSite && window.DashUpsetSite.wireCopy) window.DashUpsetSite.wireCopy(document);
+</script>
+
+</body>
+</html>

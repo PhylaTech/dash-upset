@@ -1,0 +1,1485 @@
+/* dash-seqviz — shared site styles
+ * Used across index.html, explorer.html, reference.html.
+ */
+
+:root {
+    /* "Naturalist Press" palette — matches the Phyla / Naturalist Press work
+       page (parchment paper, warm ink, earthy tannin/moss/ochre accents), so
+       our hosted tools share one house style. oklch for tonal consistency. */
+    --parchment:        oklch(95.5% 0.012 80);
+    --parchment-pale:   oklch(97.2% 0.008 80);
+    --parchment-mid:    oklch(92% 0.014 78);
+    --parchment-deep:   oklch(88% 0.018 75);
+    --ink:              oklch(22% 0.02 70);
+    --ink-soft:         oklch(35% 0.025 70);
+    --ink-hairline:        oklch(35% 0.025 70 / 0.18);
+    --ink-hairline-strong: oklch(35% 0.025 70 / 0.32);
+    --tannin:           oklch(42% 0.10 55);   /* warm rust — primary accent */
+    --tannin-deep:      oklch(32% 0.09 55);
+    --moss:             oklch(50% 0.08 140);
+    --moss-deep:        oklch(38% 0.08 140);
+    --ochre:            oklch(62% 0.12 70);
+
+    /* component tokens mapped onto the palette */
+    --color-bg: var(--parchment);
+    --color-surface: var(--parchment-pale);
+    --color-primary: var(--tannin);
+    --color-primary-dark: var(--tannin-deep);
+    --color-accent-promoter: var(--moss);
+    --color-accent-terminator: var(--ink-soft);
+    --color-accent-selection: var(--tannin);
+    --color-accent-blue: var(--moss);
+    --color-accent-purple: var(--tannin-deep);
+    --color-accent-yellow: var(--ochre);
+    --color-text: var(--ink);
+    --color-text-muted: var(--ink-soft);
+    --color-border: var(--ink-hairline);
+    --color-code-bg: oklch(24% 0.02 70);       /* ink code block */
+    --color-code-text: oklch(93% 0.012 80);
+    --color-code-inline: var(--parchment-mid); /* inline-code pill */
+    --radius: 3px;
+    --radius-lg: 4px;
+    --shadow-sm: none;                          /* editorial: hairlines, not shadows */
+    --shadow-md: none;
+    --sans: 'Bricolage Grotesque', 'Source Sans 3', system-ui, -apple-system,
+            "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --max-width: 1200px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* HTML5 `hidden` attribute must beat any `display:` rule. Without this
+   !important, elements like .example-controls (which use `display: grid`)
+   stay visible while JS finishes setting the dropdown value, producing
+   a flash of the browser's default selection before snapping to the
+   configured one. Standard Normalize.css pattern. */
+[hidden] {
+    display: none !important;
+}
+
+body {
+    font-family: var(--sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--color-primary); }
+
+/* tint native form controls (checkboxes, range sliders) to the house accent */
+input[type="checkbox"], input[type="radio"], input[type="range"] {
+    accent-color: var(--tannin);
+}
+
+/* ---- Nav ---- */
+.site-nav {
+    background: var(--parchment-pale);
+    border-bottom: 1px solid var(--ink-hairline);
+    position: sticky; top: 0; z-index: 50;
+}
+.site-nav-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+.site-nav-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--color-text);
+    text-decoration: none;
+    letter-spacing: -0.01em;
+}
+.site-nav-wordmark span { color: var(--color-primary); }
+.site-nav-logo { display: block; width: 22px; height: 22px; flex-shrink: 0; }
+.site-nav-links { display: flex; gap: 4px; flex: 1; }
+.site-nav-links a {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: var(--radius);
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 500;
+}
+.site-nav-links a:hover { background: var(--color-bg); color: var(--color-text); }
+.site-nav-links a.active {
+    background: var(--parchment-mid);
+    color: var(--color-primary);
+}
+.site-nav-github {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 0.88rem;
+    padding: 6px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+.site-nav-github:hover { background: var(--color-bg); color: var(--color-text); }
+
+@media (max-width: 640px) {
+    .site-nav-inner { gap: 8px; padding: 0 12px; }
+    .site-nav-links a { padding: 6px 8px; font-size: 0.86rem; }
+    .site-nav-github { display: none; }
+}
+
+/* ---- Hero ----
+   Editorial "press masthead": ink on parchment, framed by hairline rules,
+   with a thin tannin accent rule. No gradients — flat, printed, naturalist. */
+.hero {
+    position: relative;
+    background: var(--color-bg);
+    color: var(--ink);
+    padding: 72px 24px 56px;
+    text-align: center;
+    border-bottom: 1px solid var(--ink-hairline);
+}
+.hero::before {
+    content: "";
+    display: block;
+    width: 56px;
+    height: 3px;
+    background: var(--tannin);
+    margin: 0 auto 22px;
+}
+.hero h1 {
+    font-size: 2.9rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+}
+.hero p  { font-size: 1.15rem; color: var(--ink-soft); max-width: 720px; margin: 14px auto 0; }
+
+/* Home hero: the brand mark stands in for the printed divider flourish. */
+.home-hero::before { display: none; }
+.hero-logo { display: block; width: 96px; height: 96px; margin: 0 auto 20px; }
+
+.badges { display: flex; gap: 8px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+.badges img { height: 22px; }
+
+.hero-actions { margin-top: 28px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* ---- Buttons ---- (square, printed; tannin primary + hairline neutrals) */
+.btn {
+    display: inline-block;
+    padding: 10px 22px;
+    border-radius: 2px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+/* filled tannin — primary call to action */
+.btn-primary       { background: var(--tannin); color: var(--parchment-pale); border-color: var(--tannin); }
+.btn-primary:hover { background: var(--tannin-deep); border-color: var(--tannin-deep); }
+/* ink hairline outline — secondary */
+.btn-outline       { background: transparent; color: var(--ink); border-color: var(--ink-hairline-strong); }
+.btn-outline:hover { background: var(--parchment-mid); border-color: var(--ink); }
+/* neutral paper — utility buttons (fetch, export, etc.) */
+.btn-light       { background: var(--parchment-pale); color: var(--ink); border-color: var(--ink-hairline-strong); }
+.btn-light:hover { background: var(--parchment-mid); }
+.btn-ghost {
+    background: transparent; color: var(--color-text);
+    border-color: var(--ink-hairline);
+}
+.btn-ghost:hover { background: var(--parchment-mid); }
+
+/* ---- Sections ---- */
+.container { max-width: var(--max-width); margin: 0 auto; padding: 0 24px; }
+
+section { padding: 56px 0; }
+section h2 { font-size: 1.6rem; margin-bottom: 24px; letter-spacing: -0.01em; }
+section h3 {
+    font-size: 1.05rem;
+    margin: 20px 0 10px;
+    color: var(--color-text-muted);
+    font-weight: 600;
+}
+
+/* ---- Cards / grids ---- */
+.install-grid,
+.features-grid,
+.audience-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+.install-card,
+.feature-card,
+.audience-card {
+    background: var(--color-surface);
+    border: 1px solid var(--ink-hairline);
+    border-radius: var(--radius-lg);
+    padding: 26px 24px;
+    transition: border-color 0.16s ease, background 0.16s ease;
+}
+/* editorial hover: the hairline firms up, no lift/shadow */
+.feature-card:hover,
+.audience-card:hover {
+    border-color: var(--ink-hairline-strong);
+    background: var(--parchment-pale);
+}
+.install-card h3,
+.feature-card h3,
+.audience-card h3 {
+    font-size: 1rem;
+    margin-bottom: 8px;
+    color: var(--color-text);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 700;
+}
+.feature-card p,
+.audience-card p {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+/* ---- Install tabs (package managers) ---- */
+.install-tabs { max-width: 720px; }
+.install-tabs-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    border-bottom: 1px solid var(--color-border);
+}
+.install-tab {
+    appearance: none;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    padding: 8px 16px;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    cursor: pointer;
+}
+.install-tab:hover { color: var(--color-text); }
+.install-tab.is-active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+.install-panel { display: none; margin-top: 16px; }
+.install-panel.is-active { display: block; }
+.install-note { font-size: 0.82rem; color: var(--color-text-muted); margin-top: 12px; }
+.feature-icon {
+    font-size: 1.4rem;
+    margin-bottom: 14px;
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    /* pressed-paper chip: parchment with a hairline + tannin baseline rule */
+    background: var(--parchment-mid);
+    border: 1px solid var(--ink-hairline);
+    border-bottom: 2px solid var(--tannin);
+}
+
+/* ---- Code ---- */
+pre {
+    background: var(--color-code-bg);
+    color: var(--color-code-text);
+    padding: 14px 18px;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+p code {
+    background: var(--color-code-inline);
+    color: var(--color-text);
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-size: 0.88em;
+}
+/* Hero sections use white text on a blue gradient, which makes the
+   light `p code` pill unreadable (white text on near-white pill).
+   Pin the code color explicitly so it contrasts against the pill. */
+.hero p code,
+.hero code {
+    color: var(--color-text);
+    background: var(--color-code-inline);
+}
+
+/* ---- Copy-snippet button ---- */
+.snippet {
+    position: relative;
+}
+.snippet pre { padding-right: 68px; }
+.snippet-copy {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255,255,255,0.08);
+    color: var(--color-code-text);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 4px;
+    padding: 3px 10px;
+    /* min-width locks the box size so the "Copy" ↔ "Copied!" swap
+       never resizes the button. Sized to fit "COPIED!". */
+    min-width: 72px;
+    text-align: center;
+    font-size: 0.75rem;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 600;
+    overflow: hidden;
+    transition: color 0.25s ease;
+}
+.snippet-copy:hover { background: rgba(255,255,255,0.15); }
+
+/* "Copied!" label — crossfades with the real "Copy" text on the same
+   position. Same color as the base button text, so only the word changes;
+   no background, border, or hue shifts. */
+.snippet-copy::after {
+    content: "Copied!";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-code-text);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+.snippet-copy.copied { color: transparent; }
+.snippet-copy.copied::after { opacity: 1; }
+
+/* ---- Footer ---- */
+footer {
+    text-align: center;
+    padding: 32px 24px;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    border-top: 1px solid var(--color-border);
+}
+footer a { color: var(--color-primary); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+@media (max-width: 600px) {
+    .hero h1 { font-size: 1.7rem; }
+    .hero { padding: 40px 16px 32px; }
+    section { padding: 40px 0; }
+}
+
+/* ---- Examples Gallery ---- */
+.gallery-filter {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    align-items: center;
+}
+.gallery-filter .filter-group {
+    display: flex;
+    gap: 4px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 4px;
+}
+.gallery-filter button {
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+.gallery-filter button.active {
+    background: var(--color-primary);
+    color: #fff;
+}
+.gallery-filter .filter-search {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    background: #fff;
+}
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+.gallery-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+}
+.gallery-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+    border-color: var(--color-primary);
+}
+/* Thumbnail sits in the normal flex-column flow between the summary
+   text and the NCBI accession, centered horizontally. No border/
+   background — the SVG sits directly on the card surface so the
+   chemistry reads as an illustration rather than a framed thumbnail. */
+.gallery-card .card-thumb {
+    align-self: center;
+    margin-top: 6px;
+    width: 180px;
+    height: 135px;
+    object-fit: contain;
+}
+.gallery-card .card-badges {
+    display: flex; gap: 6px; flex-wrap: wrap;
+}
+.badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+.badge-academic   { background: var(--parchment-mid); color: var(--tannin); }
+.badge-industrial { background: #fef3c7; color: #92400e; }
+.badge-tag        { background: var(--color-bg); color: var(--color-text-muted); }
+.badge-complexity { background: #f0fdf4; color: #166534; font-variant-numeric: tabular-nums; }
+
+.gallery-card h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0;
+    text-transform: none;
+    letter-spacing: -0.01em;
+}
+.gallery-card p {
+    font-size: 0.88rem;
+    color: var(--color-text-muted);
+    margin: 0;
+    flex: 1;
+}
+.gallery-card .card-meta {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+.gallery-empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--color-text-muted);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius);
+}
+
+/* ---- Example detail ---- */
+/* Example page header. Flat background, no hard rule; the title
+   breathes into the story without a visible seam. Max-width is
+   constrained to the reading measure so the deck doesn't stretch
+   absurdly wide at desktop. */
+.example-header {
+    background: transparent;
+    border-bottom: none;
+    padding: 48px 0 24px;
+}
+.example-header > .container {
+    max-width: 720px;
+}
+.example-header .eyebrow {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+}
+.example-header h1 {
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    font-size: 2.4rem;
+    line-height: 1.15;
+    margin: 10px 0 14px;
+    letter-spacing: -0.01em;
+    font-weight: 700;
+}
+.example-header .subtitle {
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    font-style: italic;
+    color: var(--color-text);
+    font-size: 1.15rem;
+    line-height: 1.5;
+    margin: 0 0 18px;
+    max-width: 640px;
+}
+.example-header .meta-row {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    letter-spacing: 0.02em;
+    margin-top: 10px;
+}
+.byline-accession {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--color-text-muted);
+    font-family: "SF Mono", "Menlo", "Consolas", monospace;
+    font-size: 0.86em;
+    padding-bottom: 1px;
+}
+.byline-accession:hover {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.example-body {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+/* Logical grouping wrapper — keeps h3 + its content together
+   so the 40px gap only appears *between* sections, not inside them. */
+.ex-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.ex-section h3 {
+    margin: 0;
+}
+/* Text-only sections (References, collapsed snippet) follow the same
+   reading measure as the narrative lead so the eye stays in one
+   column down the page. Cards / grids opt out. */
+#ex-references,
+details.ex-section {
+    max-width: 680px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.example-viewer-wrap {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: #fff;
+    min-height: 500px;
+    overflow: hidden;
+}
+
+/* Viewer grid: one cell per accession. CSS grid with auto-fit lets
+   single-accession examples take the full width while multi-accession
+   teaching units (lovastatin, eventually others) split into 2+ columns
+   on wide viewports and stack on narrow ones — no JS media query
+   juggling required.
+
+   When the topology is "linear" the JS adds .viewer-grid--stacked,
+   which forces one column regardless of width. Circular views are
+   square-ish so side-by-side reads cleanly; linear views want the
+   full card width for comfortable horizontal scrolling. */
+.viewer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 14px;
+    padding: 12px;
+}
+.viewer-grid.viewer-grid--stacked {
+    grid-template-columns: 1fr;
+}
+.viewer-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;     /* let flex children shrink within the grid cell */
+}
+.viewer-cell-header {
+    font-size: 0.85rem;
+    color: var(--color-text);
+    padding: 0 2px 4px;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 4px;
+}
+.viewer-cell-header .viewer-cell-accession {
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-weight: 700;
+    color: var(--color-primary);
+    text-decoration: none;
+}
+.viewer-cell-header .viewer-cell-accession:hover { text-decoration: underline; }
+.viewer-cell-header .viewer-cell-descriptor { color: var(--color-text-muted); }
+.viewer-cell-header .viewer-cell-bp {
+    color: var(--color-text-muted);
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 0.78rem;
+}
+
+.example-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 500px;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+
+/* Narrative body. Serif body face (Georgia stack) for the journal
+   register; sans remains for site chrome and viewer controls. The
+   reading measure is constrained via .narrative-lead so prose lines
+   stay in the ~70-character comfort zone even on a 1280px desktop.
+   Inline viewers and wide figures break out to the full container
+   width via negative margins (see .inline-viewer / .class-figure
+   below). */
+.narrative {
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--color-text);
+}
+.narrative-lead {
+    max-width: 680px;
+    margin: 0 auto;
+}
+.narrative h3 {
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    color: var(--color-text);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 24px 0 10px;
+}
+.narrative p {
+    margin: 0 0 16px;
+    color: var(--color-text);
+}
+.narrative ul, .narrative ol { padding-left: 20px; margin-bottom: 12px; }
+.narrative li { margin-bottom: 4px; }
+.narrative a { color: var(--color-primary); text-decoration: underline; }
+.narrative a:hover { text-decoration: none; }
+.narrative code {
+    font-family: "SF Mono", "Menlo", "Consolas", monospace;
+    font-size: 0.88em;
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 3px;
+}
+
+/* Let wide media (inline viewers, full-width class figures) escape
+   the reading-measure cap so the sequence can breathe across the
+   container. Portrait floats (organism / compound) respect the
+   measure because they're already inside the 680px column. */
+.narrative-lead .inline-viewer,
+.narrative-lead figure.class-figure {
+    width: calc(100vw - 48px);
+    max-width: 1080px;
+    margin-left: 50%;
+    transform: translateX(-50%);
+}
+
+/* End-of-piece ornament: a centered dingbat signals the close of the
+   narrative, the way a printed journal piece does before the
+   apparatus (References) begins. Placed as ::before on the last
+   h3 in the narrative (always the References heading for our
+   entries), so it slots between the closing paragraph and the
+   References apparatus label. */
+.narrative-lead > h3:last-of-type::before {
+    content: "\25C6";
+    display: block;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin: 16px 0 36px;
+    letter-spacing: 0.4em;
+    padding-left: 0.4em;
+    text-transform: none;
+    font-weight: normal;
+    border: none;
+    font-family: Georgia, serif;
+}
+
+/* ---- Inline viewers embedded in narrative ---- */
+/* Authors drop <div class="inline-viewer" data-accession="..." ...></div>
+   directly into narrative HTML. Each renders as a frozen seqviz snapshot
+   with an optional italic caption underneath, flowing with the prose
+   rather than sitting in a bordered card. The reader's eye moves from
+   paragraph to viewer to paragraph without hitting a modular wall. */
+.narrative .inline-viewer {
+    /* margin-top/bottom only so the breakout rule's
+       margin-left: 50% isn't clobbered by a shorthand reset. */
+    margin-top: 28px;
+    margin-bottom: 28px;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+.narrative .inline-viewer-caption {
+    margin: 10px 2px 0;
+    font-size: 0.86rem;
+    font-style: italic;
+    color: var(--color-text-muted);
+    line-height: 1.55;
+}
+
+/* Inline figures embedded in narrative (images, compound structures,
+   class diagrams). Two placement modes:
+     (1) default: centered, its own vertical band -- for wide comparative
+         figures, pathway diagrams, and inline seqviz viewers
+     (2) figure-left / figure-right: floated, prose wraps around -- for
+         portrait photos and compact compound structures, to break up the
+         page rhythm and remove the stacked-block feel. */
+.narrative figure {
+    margin-top: 28px;
+    margin-bottom: 28px;
+    padding: 0;
+}
+.narrative figure img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+}
+.narrative figure.compound-figure img { max-width: 480px; }
+.narrative figure.class-figure img    { max-width: 100%; }
+.narrative figure.organism-figure img {
+    max-width: 420px;
+    border-radius: 4px;
+}
+
+/* Scaffold figure: the class-representation for bryostatin and any
+   other natural-product family. A single scaffold drawing with R1 /
+   R2 labels, an inline R-group substitution table, and a caption
+   stacked vertically. The table uses monospace for the chemistry
+   notation so subscripts align. */
+.narrative figure.scaffold-figure {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+.narrative figure.scaffold-figure img {
+    max-width: 520px;
+    width: 100%;
+    height: auto;
+}
+.r-group-table {
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    line-height: 1.4;
+    margin: 0 auto;
+}
+.r-group-table thead th {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    padding: 6px 14px;
+    border-bottom: 1px solid var(--color-text);
+    text-align: left;
+}
+.r-group-table thead th:first-child { text-align: center; }
+.r-group-table tbody th {
+    font-weight: 700;
+    text-align: center;
+    padding: 8px 14px;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border);
+    font-family: Georgia, serif;
+}
+.r-group-table tbody td {
+    padding: 6px 14px;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
+    text-align: center;
+    vertical-align: middle;
+}
+.r-group-table tbody td img {
+    display: block;
+    height: 56px;
+    width: auto;
+    max-width: 180px;
+    margin: 0 auto;
+}
+.r-group-table tbody tr:last-child th,
+.r-group-table tbody tr:last-child td {
+    border-bottom: none;
+}
+.narrative figure figcaption {
+    margin: 10px 2px 0;
+    font-size: 0.86rem;
+    font-style: italic;
+    color: var(--color-text-muted);
+    line-height: 1.55;
+    text-align: center;
+}
+
+/* Float treatment: prose wraps around small portrait figures. clear
+   applies to all floats so each new floated figure starts below any
+   prior one rather than stacking sideways and breaking the reading
+   column. On narrow viewports the floats collapse to centered blocks. */
+.narrative figure.figure-right {
+    float: right;
+    clear: both;
+    width: 42%;
+    max-width: 360px;
+    margin: 4px 0 20px 28px;
+}
+.narrative figure.figure-left {
+    float: left;
+    clear: both;
+    width: 42%;
+    max-width: 360px;
+    margin: 4px 28px 20px 0;
+}
+.narrative figure.figure-right img,
+.narrative figure.figure-left img {
+    max-width: 100%;
+}
+.narrative figure.figure-right figcaption,
+.narrative figure.figure-left figcaption {
+    text-align: left;
+    margin-top: 8px;
+}
+@media (max-width: 720px) {
+    .narrative figure.figure-left,
+    .narrative figure.figure-right {
+        float: none;
+        width: auto;
+        max-width: 100%;
+        margin: 28px auto;
+    }
+    .narrative figure.figure-right figcaption,
+    .narrative figure.figure-left figcaption {
+        text-align: center;
+    }
+}
+/* Wide / centered elements clear any still-hanging floats so they
+   always open a fresh horizontal band. */
+.narrative figure.class-figure,
+.narrative .inline-viewer {
+    clear: both;
+}
+
+/* Drop cap on the opening paragraph of a narrative. Previously
+   implemented via ::first-letter, which in theory applies across
+   inline wrappers but in practice renders inconsistently when the
+   first letter sits inside <strong> or <span class="info-term">.
+   The JS pass in example.html wraps the first visible character of
+   the first <p> in a .drop-cap span, wherever it lives, giving a
+   real element to style. */
+.narrative .drop-cap {
+    float: left;
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    font-size: 3.2em;
+    line-height: 0.9;
+    padding: 4px 10px 0 0;
+    font-weight: 700;
+    color: var(--color-text);
+    /* Keep jargon / strong styling out of the drop cap. */
+    border: none;
+    text-decoration: none;
+}
+
+/* Apparatus headings (References, Continue reading) should read as
+   section labels, not as article sub-heads competing with the deck.
+   Uppercase + small + tracking is the magazine convention. */
+.narrative > h3:last-of-type,     /* References heading within narrative */
+.section-label-subtle {
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    border-top: 1px solid var(--color-border);
+    padding-top: 18px;
+    margin: 32px 0 14px 0;
+}
+/* The very last h3 in a narrative is almost always "References"; the
+   above selector targets it. If an example grows a second trailing h3
+   subsection someday the selector will need adjusting. */
+
+/* References list itself: tighten to apparatus-scale type. The
+   citations support the piece, they aren't the piece. */
+#ex-references ul,
+.narrative > ul:last-child {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+#ex-references ul li,
+.narrative > ul:last-child > li {
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: var(--color-text);
+    padding: 6px 0 6px 22px;
+    text-indent: -18px;
+    border-bottom: none;
+}
+#ex-references ul li::before,
+.narrative > ul:last-child > li::before {
+    content: "\25AA";
+    color: var(--color-text-muted);
+    margin-right: 10px;
+}
+
+/* Collapsed section treatment. <details class="ex-section"> is used
+   for the Python snippet on each example page so the snippet tucks
+   away behind a clickable summary and doesn't interrupt the story. */
+details.ex-section > summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-text);
+    font-size: 1.05rem;
+    font-weight: 600;
+    user-select: none;
+}
+details.ex-section > summary::-webkit-details-marker { display: none; }
+details.ex-section > summary::before {
+    content: "\25B8";
+    display: inline-block;
+    transition: transform 150ms;
+    color: var(--color-text-muted);
+    font-size: 0.8em;
+}
+details.ex-section[open] > summary::before {
+    transform: rotate(90deg);
+}
+details.ex-section > summary:hover { color: var(--color-primary); }
+details.ex-section > *:not(summary) { margin-top: 12px; }
+
+/* (.jargon class retired — all jargon now rendered as
+   <span class="info-term"> with a rich hover tooltip; see the
+   .info-term rules above and INFO_TERMS in example.html.) */
+
+/* ---- Cross-example link pills ---- */
+/* Anchor tags inside a narrative that point at another example page
+   (href="./example.html?id=<slug>") get auto-promoted to pill-style
+   links in JS. Baseline pill reads like a subtle chip; the category
+   variants pick up the same paleblue/amber palette as the category
+   badges and "More examples" cards so the academic-vs-industrial
+   cue is consistent site-wide. Keeps text unbolded / un-underlined
+   so it reads as an inline token, not a shouty hyperlink. */
+.narrative a.example-link {
+    display: inline-block;
+    padding: 1px 10px;
+    margin: 0 1px;
+    border-radius: 14px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.94em;
+    line-height: 1.5;
+    vertical-align: baseline;
+    transition: background 120ms, border-color 120ms, color 120ms;
+}
+.narrative a.example-link:hover {
+    text-decoration: none;
+    border-color: var(--color-primary);
+}
+.narrative a.example-link.cat-academic {
+    background: var(--parchment-mid);
+    color: var(--tannin);
+    border-color: #a3dfeb;
+}
+.narrative a.example-link.cat-academic:hover {
+    background: #dbeafe;
+    border-color: var(--tannin);
+}
+.narrative a.example-link.cat-industrial {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+}
+.narrative a.example-link.cat-industrial:hover {
+    background: #fde68a;
+    border-color: #92400e;
+}
+
+/* ---- Inline info terms (hover for molecule info card) ---- */
+/* Any <span class="info-term" data-term="..."> in a narrative gets
+   a dotted underline hinting "hover for more"; the attached
+   example.html script pops up a floating card with a 2D structure
+   SVG, name, blurb, and a Wikipedia link. */
+.info-term {
+    /* Plain body colour with a dotted underline and a ? cursor. The
+       underline signals "hover for more"; the cursor reinforces it.
+       The blue-bold treatment was too loud in prose and read as a
+       link rather than a hint. */
+    border-bottom: 1px dotted var(--color-text-muted);
+    cursor: help;
+    color: inherit;
+    font-weight: inherit;
+    transition: border-bottom-color 120ms, color 120ms;
+}
+.info-term:hover {
+    border-bottom-color: var(--color-primary);
+    color: var(--color-primary);
+}
+/* Concept-only tooltips (no structure SVG) sit tighter on top of the
+   content. The .info-tooltip--concept class is toggled on the shared
+   tooltip element at render time. */
+.info-tooltip.info-tooltip--concept {
+    width: 320px;
+}
+/* Organism tooltips get a slightly wider card for the photograph and
+   render the photo cover-fit rather than contain-fit (chemistry SVGs
+   need padding; photos do not). */
+.info-tooltip.info-tooltip--organism {
+    width: 300px;
+}
+.info-tooltip {
+    position: absolute;
+    z-index: 1000;
+    width: 280px;
+    padding: 14px 16px;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--color-text);
+    pointer-events: auto;
+}
+.info-tooltip img {
+    display: block;
+    width: 100%;
+    max-width: 240px;
+    height: 140px;
+    object-fit: contain;
+    margin: 0 auto 8px;
+}
+.info-tooltip img.info-tooltip-photo {
+    max-width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+.info-tooltip .info-tooltip-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--color-text);
+}
+.info-tooltip .info-tooltip-desc {
+    color: var(--color-text);
+    margin-bottom: 10px;
+}
+.info-tooltip .info-tooltip-link {
+    display: inline-block;
+    font-size: 0.78rem;
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+.info-tooltip .info-tooltip-link:hover { text-decoration: underline; }
+
+.example-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.example-controls .ctrl { display: flex; flex-direction: column; gap: 4px; }
+.example-controls .ctrl label {
+    font-size: 0.72rem; font-weight: 600; color: var(--color-text-muted);
+    text-transform: uppercase; letter-spacing: 0.04em;
+}
+.example-controls .ctrl select {
+    font-size: 0.9rem; padding: 6px 9px; border: 1px solid var(--color-border);
+    border-radius: var(--radius); background: var(--color-bg); width: 100%;
+}
+.example-controls .ctrl input[type="range"] { width: 100%; }
+.example-controls .ctrl-inline {
+    display: flex; align-items: center; gap: 8px; min-height: 30px;
+    font-size: 0.88rem; font-weight: 400; color: var(--color-text);
+    text-transform: none; letter-spacing: 0;
+}
+/* Search input + clear button sit on one row. Clear-button hugs the
+   input's right edge and stays invisible until the field has text,
+   keeping the resting control minimal. */
+.example-controls .ctrl-search-row {
+    display: flex; align-items: stretch; gap: 0;
+}
+.example-controls .ctrl-search-row input[type="text"] {
+    flex: 1 1 auto;
+    font-family: "SF Mono", "Menlo", "Consolas", monospace;
+    font-size: 0.86rem;
+    padding: 6px 9px;
+    border: 1px solid var(--color-border);
+    border-right: none;
+    border-radius: var(--radius) 0 0 var(--radius);
+    background: var(--color-bg);
+    color: var(--color-text);
+    min-width: 0;
+}
+.example-controls .ctrl-search-row input[type="text"]:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary) inset;
+}
+.example-controls .ctrl-search-clear {
+    border: 1px solid var(--color-border);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0 10px;
+    cursor: pointer;
+    transition: color 120ms, background 120ms;
+}
+.example-controls .ctrl-search-clear:hover {
+    color: var(--color-text);
+    background: #f1f5f9;
+}
+
+
+.enzyme-toggle-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 4px 0 16px;
+}
+.enzyme-toggle {
+    font: inherit;
+    font-size: 0.85rem;
+    padding: 6px 12px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: "SFMono-Regular", Consolas, monospace;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.enzyme-toggle:hover {
+    border-color: var(--color-primary);
+    background: var(--parchment-mid);
+}
+.enzyme-toggle[aria-pressed="true"] {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+.next-examples {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 20px;
+}
+.next-examples a {
+    position: relative;
+    display: block;
+    padding: 12px 16px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: inherit;
+    font-size: 0.9rem;
+}
+/* Reserve room for the thumbnail without shrinking the text column. */
+.next-examples a.has-thumb {
+    padding-right: 92px;
+    min-height: 80px;
+}
+/* Color-coded hover: academia = primary blue, industry = amber.
+   The SVG thumbnails are rendered with transparent backgrounds
+   (RDKit clearBackground=False) so the card hover color bleeds
+   through cleanly without a white rectangle around the molecule. */
+.next-examples a:hover { border-color: var(--color-primary); }
+.next-examples a.cat-academic:hover {
+    border-color: var(--tannin);
+    background: var(--parchment-mid);
+}
+.next-examples a.cat-industrial:hover {
+    border-color: #92400e;
+    background: #fef3c7;
+}
+.next-examples .next-eyebrow {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.next-examples .next-title {
+    display: block;
+    margin-top: 4px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+/* 2D-structure thumbnail, vertically centered on the right edge of
+   the card. Smaller than the gallery-card thumb (120×90) because
+   these cards are narrower (220px min-width) and the card title
+   needs room to breathe. No border/background — the SVG sits
+   directly on the card surface so the chemistry reads as an icon
+   rather than a framed thumbnail. */
+.next-examples .next-thumb {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    width: 68px;
+    height: 56px;
+    object-fit: contain;
+}
+
+/* ---- Compound card (SmilesDrawer) ---- */
+.compound-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 20px;
+}
+.compound-card h3 {
+    font-size: 1.05rem;
+    margin: 0 0 4px;
+    color: var(--color-text);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 700;
+}
+.compound-card .compound-name {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 12px;
+}
+.compound-card .compound-canvas-wrap {
+    display: flex;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-bottom: 12px;
+}
+.compound-card canvas {
+    max-width: 100%;
+    height: auto;
+}
+.compound-card .compound-desc {
+    font-size: 0.88rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+}
+.compound-card .compound-smiles {
+    margin-top: 10px;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    font-family: "SFMono-Regular", Consolas, monospace;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+}
+.compound-card .compound-smiles code {
+    background: var(--color-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* ---- Pathway panel (multi-step biosynthetic route) ---- */
+.pathway-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 20px;
+}
+.pathway-card h3 {
+    font-size: 1.05rem;
+    margin: 0 0 4px;
+    color: var(--color-text);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 700;
+}
+.pathway-card .compound-name {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+}
+.pathway-card .compound-desc {
+    font-size: 0.88rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+.pathway-view-toggle {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+    font-size: 0.85rem;
+    color: var(--color-text);
+}
+.pathway-view-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+.pathway-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px 0;
+    padding: 12px 8px;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+.pathway-step {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+}
+.pathway-step-first { /* no incoming arrow; just the first node */ }
+.pathway-node {
+    flex: 0 0 auto;
+    width: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 4px;
+    background: #fff;
+}
+.pathway-node canvas {
+    width: 180px;
+    height: 140px;
+}
+.pathway-node-name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-text);
+    text-align: center;
+    line-height: 1.25;
+    max-width: 180px;
+    word-wrap: break-word;
+}
+.pathway-node-err canvas {
+    background: #fafafa;
+    border: 1px dashed var(--color-border);
+}
+.pathway-arrow {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 90px;
+    max-width: 200px;
+    padding: 8px 4px;
+    color: var(--color-text-muted);
+}
+.pathway-arrow-enzyme {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    font-family: "SFMono-Regular", Consolas, monospace;
+    text-align: center;
+    max-width: 100%;
+    word-wrap: break-word;
+}
+.pathway-arrow-line {
+    font-size: 1.6rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+    margin: 2px 0;
+}
+.pathway-arrow-note {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+    text-align: center;
+    max-width: 100%;
+    word-wrap: break-word;
+    line-height: 1.3;
+    padding: 2px 4px;
+}
+.pathway-cosubstrates {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    margin-top: 4px;
+}
+.pathway-cosubstrate {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+.pathway-cosubstrate-plus {
+    font-weight: 700;
+    color: var(--color-primary);
+}
+.pathway-cosubstrate-name {
+    font-family: "SFMono-Regular", Consolas, monospace;
+}
+/* Cosubstrate 2D-structure thumbnail, shown inline under the full
+   reaction scheme when an SVG matching slugify(cosubstrate.name) is
+   present. Absent SVG → onerror strips the <img> and we fall back to
+   the text name alone. Kept compact so the arrow element doesn't blow
+   out the pathway-card flex layout. */
+.pathway-cosubstrate-svg {
+    width: 48px;
+    height: 30px;
+    object-fit: contain;
+    margin: 0 2px;
+    flex-shrink: 0;
+}
+/* When the SVG is missing we slightly rearrange so the "+ NAME" pair
+   reads cleanly without a gap where the image would have been. */
+.pathway-cosubstrate-no-svg .pathway-cosubstrate-name {
+    margin-left: 2px;
+}
+
+/* ---- dash-upset home / live-demo extras (mode toggle, section leads) ---- */
+.section-lead { color: var(--color-text-muted); max-width: 720px; margin-bottom: 8px; }
+.demo-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.seg-label { font-size: 0.72rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.seg { display: inline-flex; border: 1px solid var(--color-border); border-radius: var(--radius); overflow: hidden; }
+.seg button { border: none; background: var(--color-surface); color: var(--color-text-muted); padding: 6px 14px; font-size: 0.85rem; font-weight: 500; cursor: pointer; font-family: inherit; }
+.seg button + button { border-left: 1px solid var(--color-border); }
+.seg button.active { background: var(--color-primary); color: var(--parchment-pale); }
+.demo-wrap { border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); overflow: hidden; }
