@@ -19,7 +19,7 @@ from ._imports_ import __all__
 
 # Dash appends this to served asset URLs (cache busting). Kept in lockstep
 # with dash_upset.__version__ by release-please's extra-files updater.
-__version__ = "0.1.0"  # x-release-please-version
+__version__ = "0.1.1"  # x-release-please-version
 
 if not hasattr(_dash, "development"):
     print(

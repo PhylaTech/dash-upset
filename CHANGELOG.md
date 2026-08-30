@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.1](https://github.com/PhylaTech/dash-upset/compare/v0.1.0...v0.1.1) (2026-08-30)
+
+
+### Features
+
+* conda-forge recipe and staged-recipes handoff ([#23](https://github.com/PhylaTech/dash-upset/issues/23)) ([2cddfb0](https://github.com/PhylaTech/dash-upset/commit/2cddfb0963d1115eaf5d46441c161763105ba9e7))
+
+
+### Documentation
+
+* make README user-facing; drop pre-1.0 admonition ([198a4bc](https://github.com/PhylaTech/dash-upset/commit/198a4bc1c95990ef1969cf21669dcb62f498f9e6))
+* user-facing polish (drop pre-1.0 admonition, trim self-explanatory prose, install caveat) ([75089b7](https://github.com/PhylaTech/dash-upset/commit/75089b7025f660bc815d7e66622ba28f48cded7c))
+
 ## 0.1.0 (2026-07-22)
 
 
