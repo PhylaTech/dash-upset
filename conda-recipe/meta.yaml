@@ -1,0 +1,60 @@
+# conda-forge recipe for dash-upset (v0 format / conda-build).
+# The v1 recipe.yaml in this directory is preferred for new staged-recipes
+# submissions. This meta.yaml is provided as a fallback if conda-build is
+# needed instead of rattler-build.
+
+{% set python_min = "3.10" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: dash-upset
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dash-upset/dash_upset-{{ version }}.tar.gz
+  sha256: 2b8a65e8c15ec10f72626047c12826829c283b0ce4f392ded1eb08bacba72252
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - dash >=3.0.0
+    - plotly >=5.20
+    - narwhals >=2
+
+test:
+  imports:
+    - dash_upset
+    - dash_upset.data
+    - dash_upset.figure
+    - dash_upset_component
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}.*
+
+about:
+  home: https://github.com/PhylaTech/dash-upset
+  summary: Interactive UpSet plots for Plotly Dash
+  description: |
+    dash-upset brings UpSet plots to Plotly Dash as a reusable, themeable,
+    callback-friendly component. All UpSet logic (counting modes, sorting,
+    filtering, deviation, theming) composes a Plotly figure in Python. The
+    compiled React layer ships prebuilt -- no Node toolchain required.
+  license: MIT
+  license_file: LICENSE
+  doc_url: https://phylatech.github.io/dash-upset/
+  dev_url: https://github.com/PhylaTech/dash-upset
+
+extra:
+  recipe-maintainers:
+    - evanroyrees

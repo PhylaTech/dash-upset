@@ -35,12 +35,14 @@ callback-friendly component.
 ## Installation
 
 ```bash
-# conda-forge (preferred)
-conda install -c conda-forge dash-upset
-
-# or pip
 pip install dash-upset
 ```
+
+> **conda-forge:** A recipe has been prepared and is pending submission to
+> [conda-forge/staged-recipes](https://github.com/conda-forge/staged-recipes).
+> Once the feedstock is live, `conda install -c conda-forge dash-upset` will
+> work. Until then, install from PyPI with pip (or `pixi add --pypi dash-upset`
+> in a pixi project).
 
 ## Quick start
 
